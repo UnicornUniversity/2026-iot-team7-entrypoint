@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { AttendanceService, CreateAccessLogDto } from './attendance.service';
 
-@Controller('attendance')
+@Controller('api/v1/attendance')
 export class AttendanceController {
   constructor(private attendanceService: AttendanceService) {}
   @Get()
