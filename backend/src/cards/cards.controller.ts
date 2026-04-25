@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import {CardsService} from "./cards.service";
+import { CardsService } from './cards.service';
 
 @Controller('api/v1/cards')
 export class CardsController {
@@ -7,9 +7,9 @@ export class CardsController {
 
     @Post()
     createCard(
-        @Body('cardUid') cardUid: string,
+        @Body('cardUid')cardUid: string,
         @Body('userId') userId: string,
-        @Body('isActive') isActive: boolean,
+        @Body('isActive') isActive: boolean
     ) {
         return this.cardService.createCard(cardUid, userId, isActive);
     }

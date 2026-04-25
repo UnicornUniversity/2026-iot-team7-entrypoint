@@ -22,8 +22,7 @@ export class UsersService {
             .single();
 
         if (error) throw error;
-        if (!data)
-            throw new NotFoundException(`User with ID: ${id} was not found`);
+        if (!data) throw new NotFoundException(`User with ID: ${id} was not found`);
         return data;
     }
 
@@ -31,11 +30,7 @@ export class UsersService {
         const { data, error } = await this.supabase
             .getClient()
             .from('cards')
-            .select(
-                `
-        *,
-        users (*)`,
-            )
+            .select(` *,users (*)`)
             .eq('card_uid', cardUid)
             .eq('is_active', true)
             .single();

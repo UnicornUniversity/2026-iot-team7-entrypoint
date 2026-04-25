@@ -1,5 +1,5 @@
-import { HttpException, Injectable, NotFoundException} from '@nestjs/common';
-import {SupabaseService} from "../supabase/supabase.service";
+import { HttpException, Injectable } from '@nestjs/common';
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class CardsService {
