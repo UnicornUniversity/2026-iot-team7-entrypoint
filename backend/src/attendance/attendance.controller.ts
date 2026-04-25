@@ -3,19 +3,19 @@ import { AttendanceService, CreateAccessLogDto } from './attendance.service';
 
 @Controller('api/v1/attendance')
 export class AttendanceController {
-  constructor(private attendanceService: AttendanceService) {}
-  @Get()
-  getAllAttendances() {
-    return this.attendanceService.getAllAttendances();
-  }
+    constructor(private attendanceService: AttendanceService) {}
+    @Get()
+    getAllAttendances() {
+        return this.attendanceService.getAllAttendances();
+    }
 
-  @Get(':userId')
-  getUserAttendance(@Param('userId') userId: string) {
-    return this.attendanceService.getUserAttendance(userId);
-  }
+    @Get(':userId')
+    getUserAttendance(@Param('userId') userId: string) {
+        return this.attendanceService.getUserAttendance(userId);
+    }
 
-  @Post()
-  logAttendance(@Body() dto: CreateAccessLogDto) {
-    return this.attendanceService.logAttendance(dto);
-  }
+    @Post()
+    logAttendance(@Body() dto: CreateAccessLogDto) {
+        return this.attendanceService.logAttendance(dto);
+    }
 }
