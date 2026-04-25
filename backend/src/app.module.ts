@@ -7,16 +7,18 @@ import { DevicesModule } from './devices/devices.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { UsersModule } from './users/users.module';
 import { AttendanceModule } from './attendance/attendance.module';
+import { CardsModule } from './cards/cards.module';
 
 @Module({
-  imports: [
-    DevicesModule,
-    ConfigModule.forRoot({ isGlobal: true }),
-    SupabaseModule,
-    UsersModule,
-    AttendanceModule,
-  ],
-  controllers: [AppController],
-  providers: [AppService],
+    imports: [
+        DevicesModule,
+        ConfigModule.forRoot({ isGlobal: true }),
+        SupabaseModule,
+        UsersModule,
+        AttendanceModule,
+        CardsModule,
+    ],
+    controllers: [AppController],
+    providers: [AppService],
 })
 export class AppModule {}
