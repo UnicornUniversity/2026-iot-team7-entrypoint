@@ -18,4 +18,9 @@ export class CardsController {
     retrieveCardByUid(@Param('cardUid') cardUid: string) {
         return this.cardService.getCardByUid(cardUid);
     }
+
+    @Get(':cardUid/user')
+    getUserByCardUid(@Param('cardUid') cardUid: string) {
+        return this.cardService.getUserByCardUid(cardUid);
+    }
 }
