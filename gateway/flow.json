@@ -1,0 +1,715 @@
+[
+    {
+        "id": "tab1",
+        "type": "tab",
+        "label": "Attendance Gateway",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "node_output_junction",
+        "type": "junction",
+        "z": "tab1",
+        "x": 1350,
+        "y": 500,
+        "wires": [
+            [
+                "node_serial_out",
+                "node_debug_to_arduino"
+            ]
+        ]
+    },
+    {
+        "id": "node_comment_config",
+        "type": "comment",
+        "z": "tab1",
+        "name": "1. SYSTEM CONFIGURATION",
+        "info": "Initializes global variables and SQLite database table.",
+        "x": 270,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "node_config_init",
+        "type": "inject",
+        "z": "tab1",
+        "name": "Init Config",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 250,
+        "y": 80,
+        "wires": [
+            [
+                "node_set_global_config",
+                "node_db_init_sql"
+            ]
+        ]
+    },
+    {
+        "id": "node_set_global_config",
+        "type": "change",
+        "z": "tab1",
+        "name": "Set Gateway Config",
+        "rules": [
+            {
+                "t": "set",
+                "p": "server_host",
+                "pt": "global",
+                "to": "http://192.168.0.90:8000",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "attendance_path",
+                "pt": "global",
+                "to": "/api/v1/attendance",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "batch_path",
+                "pt": "global",
+                "to": "/api/v1/attendance/batch",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "health_path",
+                "pt": "global",
+                "to": "/health",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "gateway_key",
+                "pt": "global",
+                "to": "GWAY-99-SECRET-XYZ",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "server_online",
+                "pt": "global",
+                "to": "false",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 470,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "node_db_init_sql",
+        "type": "change",
+        "z": "tab1",
+        "name": "DB Init SQL",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "CREATE TABLE IF NOT EXISTS attendance (id INTEGER PRIMARY KEY AUTOINCREMENT, uid TEXT, event TEXT, timestamp TEXT)",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 450,
+        "y": 120,
+        "wires": [
+            [
+                "node_db_exec"
+            ]
+        ]
+    },
+    {
+        "id": "node_db_exec",
+        "type": "sqlite",
+        "z": "tab1",
+        "mydb": "sql1",
+        "sqlpath": "msg.topic",
+        "sql": "",
+        "name": "Local DB",
+        "x": 1470,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "node_comment_sync",
+        "type": "comment",
+        "z": "tab1",
+        "name": "2. OFFLINE SYNC LOOP",
+        "info": "Periodically checks for queued local data and sends to server.",
+        "x": 250,
+        "y": 150,
+        "wires": []
+    },
+    {
+        "id": "node_sync_controller",
+        "type": "function",
+        "z": "tab1",
+        "name": "Sync Controller (Backoff)",
+        "func": "let interval = context.get('interval') || 10;\nlet timer = context.get('timer');\nlet visualTimer = context.get('visualTimer');\nlet isRunning = context.get('isRunning') || false;\n\nfunction clearTimers() {\n    if (timer) clearTimeout(timer);\n    if (visualTimer) clearInterval(visualTimer);\n}\n\nif (msg.type === \"new_queue\") {\n    if (isRunning) return null;\n    isRunning = true;\n    interval = 10;\n} else if (msg.type === \"sync_success\") {\n    global.set(\"server_online\", true);\n    interval = 10; \n    clearTimers();\n    // TRIGGER IMMEDIATE SYNC ON SUCCESS/RECOVERY\n    node.send({ topic: \"SELECT * FROM attendance LIMIT 50\" });\n    context.set('isRunning', true);\n    return null;\n} else if (msg.type === \"sync_fail\") {\n    global.set(\"server_online\", false);\n    interval = Math.min(interval * 2, 300);\n} else if (msg.type === \"queue_empty\") {\n    isRunning = false;\n    clearTimers();\n    context.set('isRunning', false);\n    node.status({fill:\"grey\", shape:\"dot\", text:\"Idle - Queue Empty\"});\n    return null;\n}\n\nclearTimers();\nlet targetTime = Date.now() + (interval * 1000);\n\nvisualTimer = setInterval(() => {\n    let remaining = Math.ceil((targetTime - Date.now()) / 1000);\n    if (remaining >= 0) {\n        node.status({fill:\"blue\", shape:\"ring\", text: \"Next check in \" + remaining + \"s\"});\n    } else {\n        clearInterval(visualTimer);\n    }\n}, 1000);\n\ntimer = setTimeout(() => {\n    node.send({ topic: \"SELECT * FROM attendance LIMIT 50\" });\n}, interval * 1000);\n\ncontext.set('interval', interval);\ncontext.set('timer', timer);\ncontext.set('visualTimer', visualTimer);\ncontext.set('isRunning', isRunning);\nreturn null;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 290,
+        "y": 190,
+        "wires": [
+            [
+                "node_db_exec_read"
+            ]
+        ]
+    },
+    {
+        "id": "node_db_exec_read",
+        "type": "sqlite",
+        "z": "tab1",
+        "mydb": "sql1",
+        "sqlpath": "msg.topic",
+        "sql": "",
+        "name": "Read Queue",
+        "x": 490,
+        "y": 190,
+        "wires": [
+            [
+                "node_prepare_batch"
+            ]
+        ]
+    },
+    {
+        "id": "node_prepare_batch",
+        "type": "function",
+        "z": "tab1",
+        "name": "Prepare / Check Empty",
+        "func": "if (!msg.payload || msg.payload.length === 0) {\n    return [null, { type: \"queue_empty\" }];\n}\n\nlet events = msg.payload;\nlet ids = events.map(e => e.id);\n\nmsg.event_ids = ids;\nmsg.payload = {\n    gateway_key: global.get(\"gateway_key\"),\n    events: events.map(e => ({ uid: e.uid, event: e.event, timestamp: e.timestamp }))\n};\nmsg.url = global.get(\"server_host\") + global.get(\"batch_path\");\nmsg.requestTimeout = 5000;\n\nnode.status({fill:\"blue\", shape:\"dot\", text:\"Syncing \" + events.length + \" events\"});\nreturn [msg, null];",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 190,
+        "wires": [
+            [
+                "node_http_batch_post"
+            ],
+            [
+                "node_sync_controller"
+            ]
+        ]
+    },
+    {
+        "id": "node_http_batch_post",
+        "type": "http request",
+        "z": "tab1",
+        "name": "Batch Post",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 910,
+        "y": 190,
+        "wires": [
+            [
+                "node_cleanup_db"
+            ]
+        ]
+    },
+    {
+        "id": "node_cleanup_db",
+        "type": "function",
+        "z": "tab1",
+        "name": "Cleanup DB & Loop",
+        "func": "if (msg.statusCode === 200 && msg.payload && msg.payload.status === \"OK\") {\n    let sql = \"DELETE FROM attendance WHERE id IN (\" + msg.event_ids.join(\",\") + \")\";\n    node.status({fill:\"green\", shape:\"dot\", text:\"Batch Synced\"});\n    return [{ topic: sql }, { type: \"sync_success\" }];\n}\n\nnode.status({fill:\"red\", shape:\"ring\", text:\"Sync Failed\"});\nreturn [null, { type: \"sync_fail\" }];",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1110,
+        "y": 190,
+        "wires": [
+            [
+                "node_db_exec"
+            ],
+            [
+                "node_sync_controller"
+            ]
+        ]
+    },
+    {
+        "id": "node_comment_heartbeat",
+        "type": "comment",
+        "z": "tab1",
+        "name": "3. SERVER HEARTBEAT",
+        "info": "Monitors server health with exponential backoff.",
+        "x": 250,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "node_heartbeat_inject",
+        "type": "inject",
+        "z": "tab1",
+        "name": "Trigger First Heartbeat",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.5,
+        "topic": "",
+        "payload": "HB_TRIGGER",
+        "payloadType": "str",
+        "x": 250,
+        "y": 320,
+        "wires": [
+            [
+                "node_heartbeat_controller"
+            ]
+        ]
+    },
+    {
+        "id": "node_heartbeat_controller",
+        "type": "function",
+        "z": "tab1",
+        "name": "Heartbeat Controller",
+        "func": "let interval = context.get('interval') || 300;\nlet lastStatus = context.get('lastStatus') || \"hb_success\";\nlet timer = context.get('timer');\nlet visualTimer = context.get('visualTimer');\n\nfunction clearAllTimers() {\n    if (timer) clearTimeout(timer);\n    if (visualTimer) clearInterval(visualTimer);\n}\n\n// 1. Handle Immediate Triggers (Deploy or Hardware Handshake)\nif (msg.payload === \"HB_TRIGGER\") {\n    clearAllTimers();\n    node.send({ payload: \"check\" });\n    node.status({fill:\"blue\", shape:\"dot\", text:\"Checking now...\"});\n    return null;\n}\n\n// 2. State Transition Logic\nif (msg.type === \"hb_success\") {\n    interval = 300; \n    lastStatus = \"hb_success\";\n} else if (msg.type === \"hb_fail\") {\n    if (lastStatus === \"hb_success\") {\n        interval = 10; // First fail: Start aggressive\n    } else {\n        interval = Math.min(interval * 2, 300); // Subsequent fail: Backoff\n    }\n    lastStatus = \"hb_fail\";\n}\n\nclearAllTimers();\n\n// 3. Visual Countdown\nlet targetTime = Date.now() + (interval * 1000);\nlet statusColor = (interval === 300) ? \"green\" : \"yellow\";\n\nvisualTimer = setInterval(() => {\n    let remaining = Math.ceil((targetTime - Date.now()) / 1000);\n    if (remaining >= 0) {\n        node.status({fill: statusColor, shape:\"ring\", text: \"Next check in \" + remaining + \"s\"});\n    } else {\n        clearInterval(visualTimer);\n    }\n}, 1000);\n\n// 4. Execution Timer\ntimer = setTimeout(() => {\n    node.send({ payload: \"check\" });\n}, interval * 1000);\n\ncontext.set('interval', interval);\ncontext.set('lastStatus', lastStatus);\ncontext.set('timer', timer);\ncontext.set('visualTimer', visualTimer);\nreturn null;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 320,
+        "wires": [
+            [
+                "node_heartbeat_prep"
+            ]
+        ]
+    },
+    {
+        "id": "node_heartbeat_prep",
+        "type": "function",
+        "z": "tab1",
+        "name": "Prep Heartbeat",
+        "func": "msg.url = global.get(\"server_host\") + global.get(\"health_path\");\nmsg.requestTimeout = 5000;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 680,
+        "y": 320,
+        "wires": [
+            [
+                "node_heartbeat_http"
+            ]
+        ]
+    },
+    {
+        "id": "node_heartbeat_http",
+        "type": "http request",
+        "z": "tab1",
+        "name": "Check Health",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 860,
+        "y": 320,
+        "wires": [
+            [
+                "node_heartbeat_update"
+            ]
+        ]
+    },
+    {
+        "id": "node_heartbeat_update",
+        "type": "function",
+        "z": "tab1",
+        "name": "Update SRV Status",
+        "func": "let lastStatus = global.get(\"server_online\");\nlet currentStatus = (msg.statusCode === 200);\n\nglobal.set(\"server_online\", currentStatus);\n\nif (currentStatus) {\n    node.status({fill:\"green\", shape:\"dot\", text:\"Server Online\"});\n    let out = [{ type: \"hb_success\" }, { type: \"sync_success\" }];\n    // If status CHANGED from offline to online, force a status push to Arduino\n    if (lastStatus === false) out.push({ payload: \"PUSH_STATUS\" });\n    return out;\n} else {\n    node.status({fill:\"red\", shape:\"dot\", text:\"Server Offline\"});\n    let out = [{ type: \"hb_fail\" }, null];\n    if (lastStatus === true) out.push({ payload: \"PUSH_STATUS\" });\n    return out;\n}",
+        "outputs": 3,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1070,
+        "y": 320,
+        "wires": [
+            [
+                "node_heartbeat_controller"
+            ],
+            [
+                "node_sync_controller"
+            ],
+            [
+                "node_format_time"
+            ]
+        ]
+    },
+    {
+        "id": "node_comment_arduino",
+        "type": "comment",
+        "z": "tab1",
+        "name": "4. ARDUINO COMMUNICATION",
+        "info": "Handles live scanning traffic and real-time server responses.",
+        "x": 270,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "node_serial_in",
+        "type": "serial in",
+        "z": "tab1",
+        "name": "Arduino In",
+        "serial": "s1",
+        "x": 240,
+        "y": 440,
+        "wires": [
+            [
+                "node_safe_json_parse"
+            ]
+        ]
+    },
+    {
+        "id": "node_safe_json_parse",
+        "type": "function",
+        "z": "tab1",
+        "name": "Safe JSON Parse",
+        "func": "try {\n    let trimmed = msg.payload.trim();\n    if (trimmed.startsWith('{')) {\n        msg.payload = JSON.parse(trimmed);\n        node.status({fill:\"green\", shape:\"dot\", text:\"JSON OK\"});\n        return msg;\n    }\n} catch (e) {}\n\nnode.status({fill:\"red\", shape:\"dot\", text:\"Invalid Data\"});\nreturn null;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 440,
+        "wires": [
+            [
+                "node_debug_from_arduino",
+                "node_filter_logic"
+            ]
+        ]
+    },
+    {
+        "id": "node_debug_from_arduino",
+        "type": "debug",
+        "z": "tab1",
+        "name": "From Arduino",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 650,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "node_filter_logic",
+        "type": "function",
+        "z": "tab1",
+        "name": "Filter & Enrich",
+        "func": "if (msg.payload.type === \"system\") {\n    return [null, { payload: \"HB_TRIGGER\" }];\n}\n\nif (msg.payload.type === \"attendance\") {\n    msg.saved_uid = msg.payload.uid;\n    msg.saved_event = msg.payload.event;\n    msg.saved_timestamp = new Date().toISOString();\n\n    msg.payload.gateway_key = global.get(\"gateway_key\");\n    msg.payload.timestamp = msg.saved_timestamp;\n    msg.url = global.get(\"server_host\") + global.get(\"attendance_path\");\n    msg.requestTimeout = 5000;\n    \n    return [msg, null];\n}\n\nreturn null;",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 650,
+        "y": 440,
+        "wires": [
+            [
+                "node_http_post"
+            ],
+            [
+                "node_heartbeat_controller",
+                "node_format_time"
+            ]
+        ]
+    },
+    {
+        "id": "node_http_post",
+        "type": "http request",
+        "z": "tab1",
+        "name": "Server Post",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 830,
+        "y": 440,
+        "wires": [
+            [
+                "node_handle_resp",
+                "node_debug_from_backend"
+            ]
+        ]
+    },
+    {
+        "id": "node_debug_from_backend",
+        "type": "debug",
+        "z": "tab1",
+        "name": "From Backend",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1060,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "node_handle_resp",
+        "type": "function",
+        "z": "tab1",
+        "name": "Handle Resp / Offline Queue",
+        "func": "let now = new Date();\nlet hh = now.getHours().toString().padStart(2, '0');\nlet mm = now.getMinutes().toString().padStart(2, '0');\nlet ss = now.getSeconds().toString().padStart(2, '0');\nlet timeStr = hh + \":\" + mm + \":\" + ss;\n\nfunction normalize(str) {\n    if (!str) return \"\";\n    return str.normalize(\"NFD\")\n              .replace(/[\\u0300-\\u036f]/g, \"\")\n              .replace(/\\|/g, \"\")\n              .replace(/[^\\x00-\\x7F]/g, \"\");\n}\n\nif (msg.statusCode === 200 && msg.payload && msg.payload.status === \"OK\") {\n    global.set(\"server_online\", true);\n    let first = normalize(msg.payload.firstName);\n    let last = normalize(msg.payload.lastName);\n    let type = msg.payload.event.toUpperCase();\n    let out = \"OK|\" + type + \"|\" + first + \"|\" + last + \"|\" + timeStr + \"\\n\";\n    return [{ payload: out }, null, { type: \"hb_success\" }];\n}\n\nif (msg.statusCode === 200 && msg.payload && msg.payload.status === \"DENIED\") {\n    global.set(\"server_online\", true);\n    return [{ payload: \"DENIED\\n\" }, null, { type: \"hb_success\" }];\n}\n\nif (msg.statusCode >= 500) {\n    global.set(\"server_online\", true);\n    return [{ payload: \"SERVER_ERROR\\n\" }, null, { type: \"hb_success\" }];\n}\n\nglobal.set(\"server_online\", false);\nlet rawEvent = (msg.saved_event || \"\").toLowerCase();\nlet offlineType = (rawEvent === 'auto') ? 'arrival' : rawEvent;\nlet sql = \"INSERT INTO attendance (uid, event, timestamp) VALUES ('\" + msg.saved_uid + \"', '\" + offlineType + \"', '\" + msg.saved_timestamp + \"')\";\nlet localOut = \"LOCAL_OK|\" + offlineType.toUpperCase() + \"|\" + msg.saved_uid + \"|\" + timeStr + \"\\n\";\nnode.status({fill:\"yellow\", shape:\"ring\", text:\"Offline - Queued\"});\nreturn [{ payload: localOut }, { topic: sql }, { type: \"hb_fail\" }];",
+        "outputs": 3,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1060,
+        "y": 440,
+        "wires": [
+            [
+                "node_output_junction"
+            ],
+            [
+                "node_db_exec"
+            ],
+            [
+                "node_heartbeat_controller"
+            ]
+        ]
+    },
+    {
+        "id": "node_comment_maint",
+        "type": "comment",
+        "z": "tab1",
+        "name": "5. SIMULATION & MAINTENANCE",
+        "info": "Tools for testing and system time management.",
+        "x": 280,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "node_sim_inject",
+        "type": "inject",
+        "z": "tab1",
+        "name": "Simulate Scan",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 250,
+        "y": 560,
+        "wires": [
+            [
+                "node_sim_set_payload"
+            ]
+        ]
+    },
+    {
+        "id": "node_sim_set_payload",
+        "type": "change",
+        "z": "tab1",
+        "name": "Set Sim Data",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "{}",
+                "tot": "json"
+            },
+            {
+                "t": "set",
+                "p": "payload.type",
+                "pt": "msg",
+                "to": "attendance",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "payload.event",
+                "pt": "msg",
+                "to": "arrival",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "payload.uid",
+                "pt": "msg",
+                "to": "A620F05F",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 430,
+        "y": 560,
+        "wires": [
+            [
+                "node_filter_logic"
+            ]
+        ]
+    },
+    {
+        "id": "node_time_sync_periodic",
+        "type": "inject",
+        "z": "tab1",
+        "name": "Every Minute",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 260,
+        "y": 640,
+        "wires": [
+            [
+                "node_format_time"
+            ]
+        ]
+    },
+    {
+        "id": "node_format_time",
+        "type": "function",
+        "z": "tab1",
+        "name": "Format Time Sync",
+        "func": "let now = new Date();\nlet hh = now.getHours().toString().padStart(2, '0');\nlet mm = now.getMinutes().toString().padStart(2, '0');\nlet ss = now.getSeconds().toString().padStart(2, '0');\nlet status = global.get(\"server_online\") ? \"ON\" : \"OFF\";\nlet result = \"TIME|\" + hh + \":\" + mm + \":\" + ss + \"|\" + status + \"\\n\";\nreturn { payload: result };",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 830,
+        "y": 640,
+        "wires": [
+            [
+                "node_output_junction"
+            ]
+        ]
+    },
+    {
+        "id": "node_debug_to_arduino",
+        "type": "debug",
+        "z": "tab1",
+        "name": "To Arduino",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1470,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "node_serial_out",
+        "type": "serial out",
+        "z": "tab1",
+        "name": "Arduino Out",
+        "serial": "s1",
+        "x": 1470,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "sql1",
+        "type": "sqlitedb",
+        "db": "attendance.db",
+        "mode": "RWC"
+    },
+    {
+        "id": "s1",
+        "type": "serial-port",
+        "serialport": "/dev/ttyAMA0",
+        "serialbaud": "115200",
+        "databits": "8",
+        "parity": "none",
+        "stopbits": "1",
+        "waitfor": "",
+        "dtr": "none",
+        "rts": "none",
+        "cts": "none",
+        "dsr": "none",
+        "newline": "\\n",
+        "bin": "false",
+        "out": "char",
+        "addchar": "",
+        "responsetime": "10000"
+    }
+]
