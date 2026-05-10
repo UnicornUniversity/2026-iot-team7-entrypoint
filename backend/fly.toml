@@ -1,0 +1,17 @@
+app = '2026-iot-team7-entrypoint'
+primary_region = 'fra'
+
+[build]
+
+[[services]]
+internal_port = 3005
+protocol = "tcp"
+
+[[services.ports]]
+port = 443
+handlers = []
+
+[[vm]]
+memory = '1gb'
+cpu_kind = 'shared'
+cpus = 1
