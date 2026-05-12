@@ -5,3 +5,15 @@ dist
 .github
 
 .DS_Store
+
+# Excluded Certificates
+certs/*-key.pem
+certs/ca-key.pem
+certs/*.csr
+certs/*.srl
+certs/unauthorized-*.pem
+
+# Included Certificates
+!certs/ca-cert.pem
+!certs/server-cert.pem
+!certs/server-key.pem

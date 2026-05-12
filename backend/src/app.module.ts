@@ -8,7 +8,7 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { UsersModule } from './users/users.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { CardsModule } from './cards/cards.module';
-import {MtlsMiddleware} from "./mtls.middleware";
+import { MtlsMiddleware } from "./mtls.middleware";
 
 @Module({
     imports: [
