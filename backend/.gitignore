@@ -5,6 +5,11 @@
 
 # Certificates
 /certs
+certs/*.key
+certs/*.pem
+certs/server-key.pem
+certs/client-key.pem
+certs/ca-key.pem
 
 # Logs
 logs
