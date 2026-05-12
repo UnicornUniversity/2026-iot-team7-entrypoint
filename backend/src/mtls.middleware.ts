@@ -10,15 +10,17 @@ export interface MtlsRequest extends Request {
 export class MtlsMiddleware implements NestMiddleware {
     use(req: MtlsRequest, res: Response, next: NextFunction) {
         const socket = req.socket as TLSSocket;
+
+        if (!socket.authorized) {
+            throw new UnauthorizedException(socket.authorizationError || 'Invalid client certificate');
+        }
+
         const cert = socket.getPeerCertificate();
 
-        if (!cert || !cert.subject) {
+        if (!cert?.subject?.CN) {
             throw new UnauthorizedException('No client certificate provided');
         }
 
-        req.deviceId = Array.isArray(cert.subject.CN) ?
-            cert.subject.CN[0]
-            : cert.subject.CN; // "gateway-01"
         next();
     }
 }

@@ -4,9 +4,17 @@ primary_region = 'fra'
 [build]
 dockerfile = "Dockerfile"
 
-[http_service]
+[[services]]
 internal_port = 8080
-force_https = true
+protocol = "tcp"
 auto_stop_machines = true
 auto_start_machines = true
 min_machines_running = 0
+
+[[services.ports]]
+port = 80
+handlers = ["http"]
+
+[[services.ports]]
+port = 443
+handlers = ["tls", "http"]

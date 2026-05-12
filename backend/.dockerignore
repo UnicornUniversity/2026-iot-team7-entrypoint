@@ -1,14 +1,7 @@
 node_modules
 dist
-.env
 *.log
 .git
 .github
 
-# Certificates
-certs/*.key
-certs/*-key.pem
-certs/ca-key.pem
-certs/*.csr
-certs/*.srl
 .DS_Store
