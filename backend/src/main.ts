@@ -11,7 +11,7 @@ async function bootstrap() {
         key: fs.readFileSync(path.join(certsDir, 'server-key.pem')),
         ca: fs.readFileSync(path.join(certsDir, 'ca-cert.pem')),
         requestCert: true,
-        rejectUnauthorized: false,
+        rejectUnauthorized: true,
     };
 
     const app = await NestFactory.create(AppModule, { httpsOptions });

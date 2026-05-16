@@ -15,7 +15,10 @@ RUN npm ci --only=production
 
 COPY --from=builder /app/dist ./dist
 
-COPY certs ./certs
+RUN mkdir -p ./certs
+COPY certs/ca-cert.pem ./certs/
+COPY certs/server-cert.pem ./certs/
+COPY certs/server-key.pem ./certs/
 
 # Security permissions
 RUN chmod 600 ./certs/*-key.pem && chmod 644 ./certs/*-cert.pem ./certs/ca-cert.pem
