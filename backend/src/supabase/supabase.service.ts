@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import ws from 'ws';
 
 @Injectable()
 export class SupabaseService {
@@ -15,7 +16,11 @@ export class SupabaseService {
                 'Missing SUPABASE_URL or SUPABASE_KEY in .env file',
             );
 
-        this.client = createClient(supabaseUrl, supabaseKey);
+        this.client = createClient(supabaseUrl, supabaseKey, {
+            realtime: {
+                transport: ws,
+            }
+        });
     }
     getClient(): SupabaseClient {
         return this.client;

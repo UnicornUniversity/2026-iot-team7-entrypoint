@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { CardsModule } from './cards/cards.module';
 import { MtlsMiddleware } from "./mtls.middleware";
+import { CertificatesService } from './certificates/certificates.service';
 
 @Module({
     imports: [
@@ -20,7 +21,8 @@ import { MtlsMiddleware } from "./mtls.middleware";
         CardsModule,
     ],
     controllers: [AppController],
-    providers: [AppService],
+    providers: [AppService, CertificatesService],
+    exports: [CertificatesService],
 })
 export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {
