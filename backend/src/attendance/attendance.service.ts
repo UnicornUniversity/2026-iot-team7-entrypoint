@@ -1,12 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
-
-export class CreateAccessLogDto {
-    card_uid: string;
-    device_id: string;
-    direction: 'in' | 'out';
-    timestamp: string;
-}
+import { CreateAccessLogDto } from '../dto/createAccessLogDto';
 
 @Injectable()
 export class AttendanceService {
@@ -48,7 +42,6 @@ export class AttendanceService {
                         user_id: null,
                         device_id: dto.device_id,
                         timestamp: dto.timestamp,
-                        action_name: 'card_scan',
                         direction: dto.direction,
                         success: false,
                     },
@@ -64,7 +57,6 @@ export class AttendanceService {
                     user_id: card.user_id,
                     device_id: dto.device_id,
                     timestamp: dto.timestamp,
-                    action_name: 'card_scan',
                     direction: dto.direction,
                     success: true,
                 },
