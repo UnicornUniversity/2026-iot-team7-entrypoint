@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       // všechny requesty na /api přepošle na backend
-      '/api': 'https://two026-iot-team7-entrypoint.onrender.com',
+      '/api': 'https://2026-iot-team7-entrypoint.fly.dev',
     },
   },
 })
