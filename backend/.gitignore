@@ -1,1 +1,7 @@
 node_modules
+
+# NestJS specific
+/dist
+/node_modules
+*.log
+.env
