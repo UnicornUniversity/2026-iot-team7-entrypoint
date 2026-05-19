@@ -13,6 +13,9 @@ export class AuthService {
   async validateUser(username: string, pass: string): Promise<any> {
     const user = await this.usersService.findByUsername(username);
     if (user && (await bcrypt.compare(pass, user.hashedPassword))) {
+      if (!user.isActive) {
+        throw new UnauthorizedException('This account is inactive. Please contact your administrator.');
+      }
       const { hashedPassword, ...result } = user;
       return result;
     }
@@ -20,7 +23,13 @@ export class AuthService {
   }
 
   async login(user: any) {
-    const payload = { username: user.username, sub: user.id, role: user.role };
+    const payload = { 
+      username: user.username, 
+      sub: user.id, 
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName
+    };
     return {
       access_token: this.jwtService.sign(payload),
     };

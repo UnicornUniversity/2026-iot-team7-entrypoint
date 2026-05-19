@@ -1,41 +1,74 @@
 # Attendance System API Specification (v1)
 
-This document defines the communication protocol between the Raspberry Pi Gateways and the Node.js Backend Server.
+This document defines the REST API for the Attendance System, covering communication between hardware Gateways and the NestJS Backend, as well as the Web Management interface.
 
 ## Base URL
-`http://<server-ip>:<port>`
+`http://<server-ip>:<port>/api/v1`
 
 ## Authentication
-All write operations require a `gateway_key` in the request body. This key must match a registered gateway in the server's database.
+
+### 1. Gateway Authentication
+Hardware endpoints require a valid `gateway_key` in the JSON request body.
+- Verified against the `Devices` table.
+- Handled by `GatewayGuard`.
+
+### 2. User Authentication
+Management endpoints require a **JWT Bearer Token** in the `Authorization` header.
+- Obtained via the `/auth/login` endpoint.
+- Handled by `JwtAuthGuard` and `RolesGuard`.
 
 ---
 
 ## Endpoints
 
-### 1. Server Health Check
+### I. System & Auth
+
+#### 1. Server Health Check
 **Method:** `GET`  
-**Path:** `/health`  
-**Description:** Simple heartbeat used by the gateway to update the LCD `SRV:ON/OFF` status.
+**Path:** `/health` (Note: Global prefix excluded for this endpoint)  
+**Description:** Simple heartbeat used by gateways to update LCD status.  
+**Auth:** None
 
 **Success Response (200 OK):**
 ```json
 { "status": "OK" }
 ```
 
----
-
-### 2. Register Attendance Scan
+#### 2. User Login
 **Method:** `POST`  
-**Path:** `/api/v1/attendance`  
-**Description:** Used by gateways to send real-time scan data when online.
+**Path:** `/auth/login`  
+**Description:** Authenticates a user and returns a JWT token.
 
 **Request Body:**
 ```json
 {
-  "gateway_key": "string",
-  "uid": "string",
+  "username": "<string>",
+  "password": "<string>"
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "access_token": "<string>"
+}
+```
+
+---
+
+#### 1. Register Attendance Scan
+**Method:** `POST`  
+**Path:** `/attendance`  
+**Description:** Real-time scan data from gateways.  
+**Auth:** Gateway Key
+
+**Request Body:**
+```json
+{
+  "gateway_key": "<string>",
+  "uid": "<string>",
   "event": "arrival | departure | auto",
-  "timestamp": "ISO8601 string"
+  "timestamp": "<ISO8601 string>"
 }
 ```
 
@@ -44,32 +77,26 @@ All write operations require a `gateway_key` in the request body. This key must 
 {
   "status": "OK",
   "event": "arrival | departure",
-  "firstName": "string",
-  "lastName": "string"
+  "firstName": "<string>",
+  "lastName": "<string>"
 }
 ```
 
-**Error Response (401 Unauthorized):**
-```json
-{ "status": "DENIED", "message": "Unauthorized Gateway" }
-```
-
----
-
-### 3. Batch Attendance Upload
+#### 2. Batch Attendance Upload
 **Method:** `POST`  
-**Path:** `/api/v1/attendance/batch`  
-**Description:** Used to sync data queued in the local SQLite database after a network outage.
+**Path:** `/attendance/batch`  
+**Description:** Syncs offline queued data.  
+**Auth:** Gateway Key
 
 **Request Body:**
 ```json
 {
-  "gateway_key": "string",
+  "gateway_key": "<string>",
   "events": [
     {
-      "uid": "string",
+      "uid": "<string>",
       "event": "arrival | departure",
-      "timestamp": "ISO8601 string"
+      "timestamp": "<ISO8601 string>"
     }
   ]
 }
@@ -79,28 +106,43 @@ All write operations require a `gateway_key` in the request body. This key must 
 ```json
 {
   "status": "OK",
-  "processed": number
+  "processed": <number>
 }
 ```
 
 ---
 
-### 4. Fetch Attendance Logs
-**Method:** `GET`  
-**Path:** `/api/v1/logs`  
-**Description:** Returns a history of all recorded attendance events.
+### III. Management Interface (Web)
 
-**Success Response (200 OK):**
-```json
-[
-  {
-    "uid": "string",
-    "firstName": "string",
-    "lastName": "string",
-    "type": "arrival | departure",
-    "time": "ISO8601 string",
-    "gateway": "string",
-    "synced_offline": "boolean (optional)"
-  }
-]
-```
+#### 1. User Management
+**Path:** `/users`  
+**Roles:** `admin` (CRUD), `user` (Self-Password change)
+
+- `GET /users`: List users (paginated: `limit`, `offset`).
+- `POST /users`: Create user.
+- `GET /users/:id`: Get user details.
+- `GET /users/card/:cardID`: Lookup user by RFID.
+- `PATCH /users/:id`: Update user profile.
+- `DELETE /users/:id`: Soft-delete user.
+- `PATCH /users/me/password`: Change own password (requires `currentPassword`, `newPassword`).
+
+#### 2. Device Management
+**Path:** `/devices`  
+**Roles:** `admin`
+
+- `GET /devices`: List hardware gateways (paginated).
+- `POST /devices`: Register device (auto-generates `key`).
+- `GET /devices/:id`: Get device details.
+- `PATCH /devices/:id`: Update device.
+- `DELETE /devices/:id`: Unregister device.
+
+#### 3. Attendance Records (Human View)
+**Path:** `/records`  
+**Roles:** `admin` (All), `user` (Self-only)
+
+- `GET /records`: Filtered list of all scans (paginated).
+  - Params: `limit`, `offset`, `userId`, `dateFrom`, `dateTo`, `type`.
+- `GET /records/my`: Filtered list of current user's scans.
+- `POST /records`: Manual record entry (Admin).
+- `PATCH /records/:id`: Correct existing record.
+- `DELETE /records/:id`: Soft-delete record.

@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, HttpCode, Query } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { RecordAttendanceDto, BatchAttendanceDto } from './dto/gateway-attendance.dto';
+import { AttendanceQueryDto } from './dto/attendance-query.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -11,61 +12,60 @@ import { GatewayGuard } from '../common/guards/gateway.guard';
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
-  // Gateway Endpoints
-  @Post('api/v1/attendance')
+  // --- GATEWAY ENDPOINTS (for Hardware) ---
+  @Post('attendance')
   @HttpCode(200)
   @UseGuards(GatewayGuard)
-  recordScan(@Body() recordAttendanceDto: RecordAttendanceDto) {
-    return this.attendanceService.recordScan(recordAttendanceDto);
+  recordScan(@Body() recordAttendanceDto: RecordAttendanceDto, @Req() req: any) {
+    return this.attendanceService.recordScan(recordAttendanceDto, req.gateway);
   }
 
-  @Post('api/v1/attendance/batch')
+  @Post('attendance/batch')
   @HttpCode(200)
   @UseGuards(GatewayGuard)
-  batchSync(@Body() batchAttendanceDto: BatchAttendanceDto) {
-    return this.attendanceService.batchSync(batchAttendanceDto.events);
+  batchSync(@Body() batchAttendanceDto: BatchAttendanceDto, @Req() req: any) {
+    return this.attendanceService.batchSync(batchAttendanceDto.events, req.gateway);
   }
 
-  // Admin CRUD
-  @Get('attendance')
+  // --- RECORD ENDPOINTS (for Frontend/Users) ---
+  @Get('records')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  findAll() {
-    return this.attendanceService.findAll();
+  findAll(@Query() query: AttendanceQueryDto) {
+    return this.attendanceService.findAll(query);
   }
 
-  @Post('attendance')
+  @Post('records')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   create(@Body() body: any) {
     return this.attendanceService.create(body);
   }
 
-  @Get('attendance/:id')
+  @Get('records/my')
+  @UseGuards(JwtAuthGuard)
+  findMyAttendance(@Req() req: any, @Query() query: AttendanceQueryDto) {
+    return this.attendanceService.findByUser(req.user.id, query);
+  }
+
+  @Get('records/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   findOne(@Param('id') id: string) {
     return this.attendanceService.findOne(id);
   }
 
-  @Patch('attendance/:id')
+  @Patch('records/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.attendanceService.update(id, body);
+  update(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    return this.attendanceService.update(id, body, req.user.id);
   }
 
-  @Delete('attendance/:id')
+  @Delete('records/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  remove(@Param('id') id: string) {
-    return this.attendanceService.remove(id);
-  }
-
-  // User Self-Service
-  @Get('my-attendance')
-  @UseGuards(JwtAuthGuard)
-  findMyAttendance(@Request() req: any) {
-    return this.attendanceService.findByUser(req.user.id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.attendanceService.remove(id, req.user.id);
   }
 }

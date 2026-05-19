@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, DeleteDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, DeleteDateColumn, OneToMany, ManyToOne } from 'typeorm';
 import { Attendance } from '../attendance/attendance.entity';
 
 export enum UserRole {
@@ -41,6 +41,12 @@ export class User {
 
   @DeleteDateColumn()
   deletedAt: Date;
+
+  @ManyToOne(() => User, { nullable: true })
+  updatedBy: User | null;
+
+  @CreateDateColumn()
+  updatedAt: Date;
 
   @OneToMany(() => Attendance, (attendance) => attendance.user)
   attendances: Attendance[];

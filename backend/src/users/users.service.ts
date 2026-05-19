@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from './user.entity';
@@ -25,8 +25,14 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
-  async findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+  async findAll(query: { limit?: number; offset?: number } = {}): Promise<{ data: User[]; total: number }> {
+    const { limit = 10, offset = 0 } = query;
+    const [data, total] = await this.usersRepository.findAndCount({
+      take: limit,
+      skip: offset,
+      order: { lastName: 'ASC' },
+    });
+    return { data, total };
   }
 
   async findOne(id: string): Promise<User> {
@@ -40,7 +46,7 @@ export class UsersService {
   async findByUsername(username: string): Promise<User | null> {
     return this.usersRepository.findOne({
       where: { username },
-      select: ['id', 'username', 'hashedPassword', 'role'], // Include hashedPassword for auth
+      select: ['id', 'username', 'hashedPassword', 'role', 'firstName', 'lastName', 'isActive'], // Include isActive for auth
     });
   }
 
@@ -57,8 +63,28 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
-  async remove(id: string): Promise<void> {
+  async verifyAndChangePassword(id: string, currentPass: string, newPass: string): Promise<void> {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      select: ['id', 'hashedPassword'], // Need hash for comparison
+    });
+    
+    if (!user || !(await bcrypt.compare(currentPass, user.hashedPassword))) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPass, 10);
+    await this.usersRepository.update(id, { hashedPassword: hashedNewPassword });
+  }
+
+  async remove(id: string, deleterId: string): Promise<void> {
+    if (id === deleterId) {
+      throw new ConflictException('You cannot delete your own account');
+    }
     const user = await this.findOne(id);
+    const deleter = await this.findOne(deleterId);
+    user.updatedBy = deleter;
+    await this.usersRepository.save(user);
     await this.usersRepository.softRemove(user);
   }
 }

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Device } from './device.entity';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class DevicesService {
@@ -11,16 +12,26 @@ export class DevicesService {
   ) {}
 
   async create(deviceData: Partial<Device>): Promise<Device> {
-    const existing = await this.devicesRepository.findOne({ where: { key: deviceData.key } });
-    if (existing) {
-      throw new ConflictException('Device key already exists');
+    if (!deviceData.key) {
+      deviceData.key = randomBytes(24).toString('base64url');
+    } else {
+      const existing = await this.devicesRepository.findOne({ where: { key: deviceData.key } });
+      if (existing) {
+        throw new ConflictException('Device key already exists');
+      }
     }
     const device = this.devicesRepository.create(deviceData);
     return this.devicesRepository.save(device);
   }
 
-  async findAll(): Promise<Device[]> {
-    return this.devicesRepository.find();
+  async findAll(query: { limit?: number; offset?: number } = {}): Promise<{ data: Device[]; total: number }> {
+    const { limit = 10, offset = 0 } = query;
+    const [data, total] = await this.devicesRepository.findAndCount({
+      take: limit,
+      skip: offset,
+      order: { name: 'ASC' },
+    });
+    return { data, total };
   }
 
   async findOne(id: string): Promise<Device> {

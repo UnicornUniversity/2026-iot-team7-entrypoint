@@ -14,6 +14,6 @@ export class CreateDeviceDto {
   description?: string;
 
   @IsString()
-  @IsNotEmpty()
-  key: string;
+  @IsOptional()
+  key?: string;
 }
