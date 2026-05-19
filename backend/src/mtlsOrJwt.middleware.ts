@@ -29,6 +29,11 @@ export class MtlsOrJwtMiddleware implements NestMiddleware {
     }
 
     async use(req: MtlsOrJwtRequest, res: Response, next: NextFunction) {
+        if (req.path.startsWith('/api/docs') || req.path === '/api/docs-json') {
+            next();
+            return;
+        }
+
         if (this.authenticateWithMtls(req)) {
             next();
             return;

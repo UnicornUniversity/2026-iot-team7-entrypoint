@@ -53,10 +53,33 @@ Authorization: Bearer <accessToken>
 - When `/auth/refresh` succeeds, replace both the old access token and old refresh
   token with the new values from the response.
 
-Required environment variables:
+## Swagger API docs
+
+Swagger UI is available after starting the server:
+
+```text
+https://localhost:3000/api/docs
+```
+
+To call protected endpoints from Swagger:
+
+1. Use `POST /api/v1/auth/register` or `POST /api/v1/auth/login`.
+2. Copy the `accessToken` from the response.
+3. Click the `Authorize` button at the top of Swagger UI.
+4. Paste the token as:
+
+```text
+Bearer <accessToken>
+```
+
+5. Submit the authorization dialog, then call protected endpoints from the docs.
+
+## Required environment variables:
 
 ```bash
-JWT_ACCESS_SECRET=change-me
+SUPABASE_URL=change-me
+SUPABASE_KEY=change-me-too
+JWT_ACCESS_SECRET=change-me-too
 JWT_REFRESH_SECRET=change-me-too
 JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=30d

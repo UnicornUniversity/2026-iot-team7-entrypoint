@@ -34,7 +34,8 @@ export class AppModule implements NestModule {
                 { path: 'api/v1/auth/register', method: RequestMethod.POST },
                 { path: 'api/v1/auth/login', method: RequestMethod.POST },
                 { path: 'api/v1/auth/refresh', method: RequestMethod.POST },
-                { path: 'api/v1/auth/logout', method: RequestMethod.POST }
+                { path: 'api/v1/auth/logout', method: RequestMethod.POST },
+                { path: 'api/v1/health', method: RequestMethod.GET }
             )
             .forRoutes('*');
     }
