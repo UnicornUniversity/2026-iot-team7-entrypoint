@@ -1,6 +1,5 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AttendanceService, CreateAccessLogDto } from './attendance.service';
-import {MtlsMiddleware} from "../mtls.middleware";
 
 @Controller('api/v1/attendance')
 export class AttendanceController {

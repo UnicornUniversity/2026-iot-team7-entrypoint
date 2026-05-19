@@ -47,8 +47,8 @@ Authorization: Bearer <accessToken>
 ```
 
 - `refreshToken` is used only with `POST /api/v1/auth/refresh` to get a new token
-  pair when the access token expires.
-- Access tokens are short-lived. Refresh tokens are longer-lived, stored hashed in
+  pair when the `accessToken` expires.
+- `Access tokens` are short-lived. `Refresh tokens` are longer-lived, stored hashed in
   `refresh_tokens`, and rotated on every refresh.
 - When `/auth/refresh` succeeds, replace both the old access token and old refresh
   token with the new values from the response.

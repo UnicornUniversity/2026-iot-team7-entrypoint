@@ -18,6 +18,5 @@ async function bootstrap() {
     });
     app.useGlobalPipes(new ValidationPipe());
     await app.listen(process.env.PORT ?? 3000);
-    console.log('mTLS server running on https://localhost:3005');
 }
 bootstrap();
