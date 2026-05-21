@@ -89,7 +89,7 @@ function Employees() {
             />
           </Modal>
         )}
-        <EmployeesList employees={filtered} statusMap={statusMap} cardMap={cardMap} />
+        <EmployeesList employees={filtered} statusMap={statusMap} cardMap={cardMap} onUpdated={() => setRefreshKey(k => k + 1)} />
       </div>
 
     </section>

@@ -1,22 +1,49 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { updateUser, deleteUser } from '../api'
 
-function EditEmployeeForm({ employee, onClose }) {
+function EditEmployeeForm({ employee, onClose, onUpdated }) {
+  const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
   const [name, setName] = useState(employee.name)
   const [surname, setSurname] = useState(employee.surname)
   const [email, setEmail] = useState(employee.email || '')
   const [isActive, setIsActive] = useState(employee.is_active)
-  const [message, setMessage] = useState(null)
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(false)
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
-    // TODO: nahradit až BE dodá PATCH /api/v1/users/:id
-    setMessage('Úprava zaměstnance zatím není dostupná.')
+    setError(null)
+    setLoading(true)
+    try {
+      await updateUser(employee.id, {
+        name: capitalize(name),
+        surname: capitalize(surname),
+        email,
+        isActive,
+      })
+      onUpdated?.()
+      onClose()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleDelete = () => {
-    // TODO: nahradit až BE dodá DELETE /api/v1/users/:id
-    setMessage('Smazání zaměstnance zatím není dostupné.')
+  const handleDelete = async () => {
+    if (!confirm(`Opravdu smazat ${employee.name} ${employee.surname}?`)) return
+    setError(null)
+    setLoading(true)
+    try {
+      await deleteUser(employee.id)
+      onUpdated?.()
+      onClose()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -35,12 +62,12 @@ function EditEmployeeForm({ employee, onClose }) {
             Aktivní
           </label>
           <div className="edit-form-actions">
-            <button type="submit" className="btn-save">Uložit</button>
-            <button type="button" className="btn-delete" onClick={handleDelete}>Smazat</button>
+            <button type="submit" className="btn-save" disabled={loading}>Uložit</button>
+            <button type="button" className="btn-delete" onClick={handleDelete} disabled={loading}>Smazat</button>
             <button type="button" className="btn-cancel" onClick={onClose}>Zrušit</button>
           </div>
         </form>
-        {message && <p className="edit-message">{message}</p>}
+        {error && <p className="edit-message" style={{ color: 'red' }}>{error}</p>}
       </td>
     </tr>
   )
@@ -72,7 +99,7 @@ function EmployeeItem({ employee, status, isSelected, onSelect, cardUid }) {
   )
 }
 
-function EmployeesList({ employees, statusMap, cardMap = {} }) {
+function EmployeesList({ employees, statusMap, cardMap = {}, onUpdated }) {
   const [sortKey, setSortKey] = useState('surname')
   const [sortDir, setSortDir] = useState('asc')
   const [selectedId, setSelectedId] = useState(null)
@@ -138,6 +165,7 @@ function EmployeesList({ employees, statusMap, cardMap = {} }) {
                 key={`edit-${emp.id}`}
                 employee={emp}
                 onClose={() => setSelectedId(null)}
+                onUpdated={onUpdated}
               />
             )}
           </>

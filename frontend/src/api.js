@@ -91,6 +91,25 @@ export async function logAttendance(cardUid, deviceId, direction, timestamp) {
   return res.json()
 }
 
+export async function updateUser(id, fields) {
+  const res = await fetch(`${BASE_URL}/api/v1/users/${id}`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify(fields),
+  })
+  if (!res.ok) throw new Error('Chyba při úpravě zaměstnance')
+  return res.json()
+}
+
+export async function deleteUser(id) {
+  const res = await fetch(`${BASE_URL}/api/v1/users/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  if (!res.ok) throw new Error('Chyba při mazání zaměstnance')
+  return res.json()
+}
+
 export async function createUser(name, surname, username, email, roleId, isActive) {
   const res = await fetch(`${BASE_URL}/api/v1/users`, {
     method: 'POST',
