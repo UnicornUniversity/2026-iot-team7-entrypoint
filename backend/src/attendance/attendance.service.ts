@@ -53,7 +53,6 @@ export class AttendanceService {
                         success: false,
                     },
                 ]);
-
             throw new NotFoundException('Card was not found or is not active');
         }
 
@@ -73,8 +72,12 @@ export class AttendanceService {
             .single();
 
         if (error) throw error;
-
-        return data;
+        return {
+            ...data,
+            name: card.users.name,
+            surname: card.users.surname,
+            username: card.users.username
+        };
     }
 
     async updateAttendance(id: string, dto: UpdateAccessLogDto) {
