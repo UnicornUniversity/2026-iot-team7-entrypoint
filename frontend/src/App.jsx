@@ -7,6 +7,13 @@ import Attendance from './pages/Attendance'
 import Cards from './pages/Cards'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
+function ProtectedRoute({ children, adminOnly = false }) {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  if (adminOnly && user.role !== 'admin') return <Navigate to="/attendance" replace />
+  return children
+}
+
 function AppHeader() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -30,8 +37,6 @@ function AppHeader() {
 }
 
 function AppLayout() {
-  const { user } = useAuth()
-
   return (
     <BrowserRouter>
       <div className="app-shell">
@@ -41,10 +46,10 @@ function AppLayout() {
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={user?.role === 'admin' ? <Dashboard /> : <Navigate to="/attendance" replace />} />
-            <Route path="/employees" element={user?.role === 'admin' ? <Employees /> : <Navigate to="/attendance" replace />} />
-            <Route path="/attendance" element={<Attendance />} />
-            <Route path="/cards" element={<Cards />} />
+            <Route path="/dashboard" element={<ProtectedRoute adminOnly><Dashboard /></ProtectedRoute>} />
+            <Route path="/employees" element={<ProtectedRoute adminOnly><Employees /></ProtectedRoute>} />
+            <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
+            <Route path="/cards" element={<ProtectedRoute><Cards /></ProtectedRoute>} />
             <Route path="*" element={<div className="page-content"><h1>404</h1><p>Stránka nenalezena.</p></div>} />
           </Routes>
         </main>
