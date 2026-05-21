@@ -1,46 +1,75 @@
-// Základní adresa backendu
-const BASE_URL = '' // proxy ve vite.config.js přesměruje /api na backend
+const BASE_URL = ''
 
-// Načte seznam všech uživatelů
+function authHeaders() {
+  const token = localStorage.getItem('accessToken')
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
+
+export async function login(email, password) {
+  const res = await fetch(`${BASE_URL}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  if (!res.ok) throw new Error('Špatný email nebo heslo')
+  return res.json()
+}
+
+export async function getUserById(id) {
+  const res = await fetch(`${BASE_URL}/api/v1/users/${id}`, {
+    headers: authHeaders(),
+  })
+  if (!res.ok) throw new Error('Chyba při načítání uživatele')
+  return res.json()
+}
+
 export async function getUsers() {
-  const res = await fetch(`${BASE_URL}/api/v1/users`)
+  const res = await fetch(`${BASE_URL}/api/v1/users`, {
+    headers: authHeaders(),
+  })
   if (!res.ok) throw new Error('Chyba při načítání uživatelů')
   return res.json()
 }
 
-// Načte všechny záznamy docházky
 export async function getAttendance() {
-  const res = await fetch(`${BASE_URL}/api/v1/attendance`)
+  const res = await fetch(`${BASE_URL}/api/v1/attendance`, {
+    headers: authHeaders(),
+  })
   if (!res.ok) throw new Error('Chyba při načítání docházky')
   return res.json()
 }
 
-// Načte záznamy docházky konkrétního uživatele
 export async function getUserAttendance(userId) {
-  const res = await fetch(`${BASE_URL}/api/v1/attendance/${userId}`)
+  const res = await fetch(`${BASE_URL}/api/v1/attendance/${userId}`, {
+    headers: authHeaders(),
+  })
   if (!res.ok) throw new Error('Chyba při načítání docházky')
   return res.json()
 }
 
-// Načte seznam všech zařízení
 export async function getDevices() {
-  const res = await fetch(`${BASE_URL}/api/v1/devices`)
+  const res = await fetch(`${BASE_URL}/api/v1/devices`, {
+    headers: authHeaders(),
+  })
   if (!res.ok) throw new Error('Chyba při načítání zařízení')
   return res.json()
 }
 
-// Načte karty podle UID
 export async function getCards(cardUid) {
-  const res = await fetch(`${BASE_URL}/api/v1/cards/${cardUid}`)
+  const res = await fetch(`${BASE_URL}/api/v1/cards/${cardUid}`, {
+    headers: authHeaders(),
+  })
   if (!res.ok) throw new Error('Chyba při načítání karet')
   return res.json()
 }
 
-// Přidá nový záznam průchodu
 export async function logAttendance(cardUid, deviceId, direction, timestamp) {
   const res = await fetch(`${BASE_URL}/api/v1/attendance`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({
       card_uid: cardUid,
       device_id: deviceId,
@@ -52,12 +81,11 @@ export async function logAttendance(cardUid, deviceId, direction, timestamp) {
   return res.json()
 }
 
-// Vytvoří novou kartu a přiřadí ji uživateli
 export async function createCard(cardUid, userId, isActive) {
   const res = await fetch(`${BASE_URL}/api/v1/cards`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' }, // říkáme serveru, že posíláme JSON
-    body: JSON.stringify({ cardUid, userId, isActive }), // převedeme objekt na text
+    headers: authHeaders(),
+    body: JSON.stringify({ cardUid, userId, isActive }),
   })
   if (!res.ok) throw new Error('Chyba při vytváření karty')
   return res.json()
