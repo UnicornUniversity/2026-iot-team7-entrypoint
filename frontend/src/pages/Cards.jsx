@@ -1,82 +1,161 @@
-import { useState } from 'react'
-import { getCards, createCard } from '../api'
+import { useState, useEffect } from 'react'
+import { getAllCards, getUsers, updateCard, deleteCard } from '../api'
 
-function Cards() {
-  // stav pro vyhledávání karty
-  const [searchUid, setSearchUid] = useState('')
-  const [cardResult, setCardResult] = useState(null) // výsledek hledání
-  const [searchError, setSearchError] = useState(null)
+function EditCardForm({ card, users, onClose, onUpdated }) {
+  const [userId, setUserId] = useState(card.user_id || '')
+  const [isActive, setIsActive] = useState(card.is_active)
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(false)
 
-  // stav pro formulář nové karty
-  const [newCardUid, setNewCardUid] = useState('')
-  const [newUserId, setNewUserId] = useState('')
-  const [createMsg, setCreateMsg] = useState(null) // zpráva po vytvoření
-
-  // vyhledání karty podle UID
-  const handleSearch = (e) => {
-    e.preventDefault() // zabrání znovunačtení stránky po odeslání formuláře
-    setSearchError(null)
-    setCardResult(null)
-    getCards(searchUid)
-      .then(data => setCardResult(data))
-      .catch(err => setSearchError(err.message))
+  const handleSave = async (e) => {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+    try {
+      await updateCard(card.card_uid, { userId, isActive })
+      onUpdated()
+      onClose()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // vytvoření nové karty, is_active nastavíme na true hned při vytvoření
-  const handleCreate = (e) => {
-    e.preventDefault()
-    setCreateMsg(null)
-    createCard(newCardUid, newUserId, true)
-      .then(() => setCreateMsg('Karta úspěšně vytvořena'))
-      .catch(err => setCreateMsg(`Chyba: ${err.message}`))
+  const handleDelete = async () => {
+    if (!confirm(`Opravdu smazat kartu ${card.card_uid}?`)) return
+    setError(null)
+    setLoading(true)
+    try {
+      await deleteCard(card.card_uid)
+      onUpdated()
+      onClose()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <section className="page-content">
-      <h1>Karty</h1>
-
-      <h2>Vyhledat kartu</h2>
-      <form onSubmit={handleSearch}>
-        <input
-          value={searchUid}
-          onChange={e => setSearchUid(e.target.value)}
-          placeholder="UID karty"
-        />
-        <button type="submit">Hledat</button>
-      </form>
-      {/* zobrazíme chybu nebo výsledek hledání */}
-      {searchError && <p>Chyba: {searchError}</p>}
-      {cardResult && (
-        <table>
-          <thead><tr><th>UID</th><th>Uživatel ID</th><th>Aktivní</th></tr></thead>
-          <tbody>
-            {cardResult.map(card => (
-              <tr key={card.id}>
-                <td>{card.card_uid}</td>
-                <td>{card.user_id}</td>
-                <td>{card.is_active ? 'Ano' : 'Ne'}</td>
-              </tr>
+    <tr className="edit-row">
+      <td colSpan={4}>
+        <form className="edit-form" onSubmit={handleSave}>
+          <select value={userId} onChange={e => setUserId(e.target.value)}>
+            <option value="">— bez zaměstnance —</option>
+            {users.map(u => (
+              <option key={u.id} value={u.id}>{u.name} {u.surname}</option>
             ))}
-          </tbody>
-        </table>
-      )}
+          </select>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} />
+            Aktivní
+          </label>
+          <div className="edit-form-actions">
+            <button type="submit" className="btn-save" disabled={loading}>Uložit</button>
+            <button type="button" className="btn-delete" onClick={handleDelete} disabled={loading}>Smazat</button>
+            <button type="button" className="btn-cancel" onClick={onClose}>Zrušit</button>
+          </div>
+        </form>
+        {error && <p className="edit-message" style={{ color: 'red' }}>{error}</p>}
+      </td>
+    </tr>
+  )
+}
 
-      <h2>Vytvořit kartu</h2>
-      <form onSubmit={handleCreate}>
-        <input
-          value={newCardUid}
-          onChange={e => setNewCardUid(e.target.value)}
-          placeholder="UID karty"
-        />
-        <input
-          value={newUserId}
-          onChange={e => setNewUserId(e.target.value)}
-          placeholder="ID uživatele"
-        />
-        <button type="submit">Vytvořit</button>
-      </form>
-      {/* zobrazíme zprávu o úspěchu nebo chybě */}
-      {createMsg && <p>{createMsg}</p>}
+function Cards() {
+  const [cards, setCards] = useState([])
+  const [users, setUsers] = useState([])
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [selectedId, setSelectedId] = useState(null)
+
+  useEffect(() => {
+    Promise.all([getAllCards(), getUsers()])
+      .then(([cardsData, usersData]) => {
+        setCards(cardsData)
+        setUsers(usersData)
+      })
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [refreshKey])
+
+  const userMap = {}
+  users.forEach(u => { userMap[u.id] = `${u.name} ${u.surname}` })
+
+  const filtered = cards.filter(c => {
+    const name = userMap[c.user_id] || ''
+    return (
+      c.card_uid?.toLowerCase().includes(search.toLowerCase()) ||
+      name.toLowerCase().includes(search.toLowerCase())
+    )
+  })
+
+  if (loading) return <p>Načítám...</p>
+  if (error) return <p>Chyba: {error}</p>
+
+  return (
+    <section className="page-content">
+
+      <h2>Vyhledávání</h2>
+      <div className="filter-card">
+        <label>
+          Karta nebo zaměstnanec
+          <input
+            placeholder="Hledat podle UID nebo jména..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </label>
+      </div>
+
+      <div className="attendance-block">
+        <div className="block-header">
+          <h2>Seznam karet</h2>
+        </div>
+        {filtered.length === 0 ? (
+          <p>Žádné karty nenalezeny.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>UID karty</th>
+                <th>Zaměstnanec</th>
+                <th>Aktivní</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(card => (
+                <>
+                  <tr
+                    key={card.id}
+                    style={{ cursor: 'pointer', background: selectedId === card.id ? '#f1f5f9' : '' }}
+                    onClick={() => setSelectedId(selectedId === card.id ? null : card.id)}
+                  >
+                    <td>{card.card_uid}</td>
+                    <td>{userMap[card.user_id] || '—'}</td>
+                    <td>{card.is_active ? 'Ano' : 'Ne'}</td>
+                    <td></td>
+                  </tr>
+                  {selectedId === card.id && (
+                    <EditCardForm
+                      key={`edit-${card.id}`}
+                      card={card}
+                      users={users}
+                      onClose={() => setSelectedId(null)}
+                      onUpdated={() => setRefreshKey(k => k + 1)}
+                    />
+                  )}
+                </>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
     </section>
   )
 }

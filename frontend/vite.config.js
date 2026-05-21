@@ -7,7 +7,10 @@ export default defineConfig({
   server: {
     proxy: {
       // všechny requesty na /api přepošle na backend
-      '/api': 'https://2026-iot-team7-entrypoint.fly.dev',
+      '/api': {
+        target: 'https://2026-iot-team7-entrypoint.fly.dev',
+        secure: false,
+      },
     },
   },
 })

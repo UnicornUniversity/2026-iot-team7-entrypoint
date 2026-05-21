@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getAttendance, getUsers } from '../api'
+import { getAttendance, getUsers, getAllCards, getDevices } from '../api'
 import { useAuth } from '../context/AuthContext'
 
 function Dashboard() {
@@ -8,16 +8,21 @@ function Dashboard() {
   const navigate = useNavigate()
   const [currentlyIn, setCurrentlyIn] = useState([])
   const [recentRecords, setRecentRecords] = useState([])
+  const [devices, setDevices] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    Promise.all([getUsers(), getAttendance()])
-      .then(([users, records]) => {
+    Promise.all([getUsers(), getAttendance(), getAllCards(), getDevices()])
+      .then(([users, records, cards, devicesData]) => {
+        setDevices(devicesData)
         const userMap = {}
         users.forEach(u => {
           userMap[u.id] = { fullName: `${u.name} ${u.surname}`, id: u.id }
         })
+
+        const cardMap = {}
+        cards.forEach(c => { if (c.is_active && c.user_id) cardMap[c.user_id] = c.card_uid })
 
         const sorted = [...records].sort(
           (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
@@ -27,6 +32,7 @@ function Dashboard() {
           sorted.slice(0, 6).map(r => ({
             ...r,
             fullName: userMap[r.user_id]?.fullName || 'Neznámý',
+            cardUid: cardMap[r.user_id] || '—',
           }))
         )
 
@@ -106,7 +112,46 @@ function Dashboard() {
                   <td>{new Date(r.timestamp).toLocaleString('cs-CZ')}</td>
                   <td>{r.fullName}</td>
                   <td>{r.direction === 'in' ? 'Příchod' : 'Odchod'}</td>
-                  <td>{r.card_uid || '—'}</td>
+                  <td>{r.cardUid}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Blok 3 — stav zařízení */}
+      <div className="attendance-block">
+        <div className="block-header">
+          <h2>Zařízení</h2>
+          <span className="dashboard-count">
+            {devices.filter(d => d.status === 'online').length}/{devices.length}
+          </span>
+        </div>
+        {devices.length === 0 ? (
+          <p className="evidence-empty">Žádná zařízení.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Název</th>
+                <th>Umístění</th>
+                <th>Stav</th>
+              </tr>
+            </thead>
+            <tbody>
+              {devices.map(d => (
+                <tr key={d.id}>
+                  <td>{d.name}</td>
+                  <td>{d.location || '—'}</td>
+                  <td>
+                    <span style={{
+                      color: d.status === 'online' ? '#16a34a' : d.status === 'error' ? '#dc2626' : '#6b7280',
+                      fontWeight: 600,
+                    }}>
+                      {d.status === 'online' ? 'Online' : d.status === 'error' ? 'Chyba' : 'Offline'}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>

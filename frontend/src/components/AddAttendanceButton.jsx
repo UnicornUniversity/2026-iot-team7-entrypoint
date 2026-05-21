@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { logAttendance } from '../api'
+import { logAttendance, getUserByCardUid } from '../api'
 import Modal from './Modal'
 
 function AddAttendanceButton({ onAdded, devices = [], employees = [], cardMap = {} }) {
@@ -7,6 +7,8 @@ function AddAttendanceButton({ onAdded, devices = [], employees = [], cardMap = 
   const [selectedUserId, setSelectedUserId] = useState('')
   const [cardUid, setCardUid] = useState('')
   const [cardMissing, setCardMissing] = useState(false)
+  const [cardSearchError, setCardSearchError] = useState(null)
+  const [cardSearching, setCardSearching] = useState(false)
   const [deviceId, setDeviceId] = useState('')
   const [direction, setDirection] = useState('in')
   const [timestamp, setTimestamp] = useState('')
@@ -28,16 +30,32 @@ function AddAttendanceButton({ onAdded, devices = [], employees = [], cardMap = 
     setSelectedUserId('')
     setCardUid('')
     setCardMissing(false)
+    setCardSearchError(null)
     setDeviceId('')
     setDirection('in')
     setTimestamp('')
     setMessage(null)
   }
 
+  const handleFindByCard = async () => {
+    if (!cardUid) return
+    setCardSearchError(null)
+    setCardSearching(true)
+    try {
+      const user = await getUserByCardUid(cardUid)
+      setSelectedUserId(user.id)
+      setCardMissing(false)
+    } catch {
+      setCardSearchError('Zaměstnanec s touto kartou nebyl nalezen.')
+    } finally {
+      setCardSearching(false)
+    }
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
     setMessage(null)
-    logAttendance(cardUid, deviceId, direction, timestamp)
+    logAttendance(cardUid, deviceId, direction, new Date(timestamp).toISOString())
       .then(() => {
         onAdded()
         handleClose()
@@ -70,16 +88,27 @@ function AddAttendanceButton({ onAdded, devices = [], employees = [], cardMap = 
             </label>
             <label>
               UID karty
-              <input
-                placeholder="Doplní se automaticky"
-                value={cardUid}
-                onChange={e => { setCardUid(e.target.value); setCardMissing(false) }}
-                required
-              />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  style={{ flex: 1 }}
+                  placeholder="Doplní se automaticky nebo zadej ručně"
+                  value={cardUid}
+                  onChange={e => { setCardUid(e.target.value); setCardMissing(false); setCardSearchError(null) }}
+                  required
+                />
+                <button type="button" onClick={handleFindByCard} disabled={!cardUid || cardSearching}>
+                  {cardSearching ? '...' : 'Najít zaměstnance'}
+                </button>
+              </div>
             </label>
             {cardMissing && (
               <p className="edit-message" style={{ color: '#f59e0b', marginTop: 0 }}>
-                Zaměstnanec nemá žádný záznam průchodu — zadej UID karty ručně.
+                Zaměstnanec nemá přiřazenou kartu — zadej UID karty ručně.
+              </p>
+            )}
+            {cardSearchError && (
+              <p className="edit-message" style={{ color: '#dc2626', marginTop: 0 }}>
+                {cardSearchError}
               </p>
             )}
             <label>
