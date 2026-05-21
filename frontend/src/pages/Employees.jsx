@@ -14,6 +14,7 @@ function Employees() {
   const [showForm, setShowForm] = useState(false)   // viditelnost formuláře
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     Promise.all([getUsers(), getAttendance()])
@@ -45,7 +46,7 @@ function Employees() {
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
-  }, [])
+  }, [refreshKey])
 
   // filtrujeme zaměstnance podle vyhledávacího textu
   const filtered = employees.filter(emp =>
@@ -82,7 +83,10 @@ function Employees() {
         </div>
         {showForm && (
           <Modal onClose={() => setShowForm(false)}>
-            <CreateEmployeeForm onClose={() => setShowForm(false)} />
+            <CreateEmployeeForm
+              onClose={() => setShowForm(false)}
+              onCreated={() => setRefreshKey(k => k + 1)}
+            />
           </Modal>
         )}
         <EmployeesList employees={filtered} statusMap={statusMap} cardMap={cardMap} />

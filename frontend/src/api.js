@@ -91,6 +91,16 @@ export async function logAttendance(cardUid, deviceId, direction, timestamp) {
   return res.json()
 }
 
+export async function createUser(name, surname, username, email, roleId, isActive) {
+  const res = await fetch(`${BASE_URL}/api/v1/users`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ name, surname, username, email, roleId, isActive }),
+  })
+  if (!res.ok) throw new Error('Chyba při vytváření zaměstnance')
+  return res.json()
+}
+
 export async function createCard(cardUid, userId, isActive) {
   const res = await fetch(`${BASE_URL}/api/v1/cards`, {
     method: 'POST',
