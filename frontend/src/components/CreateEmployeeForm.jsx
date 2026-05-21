@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createUser, createCard, getAllCards } from '../api'
+import { register, createCard, getAllCards } from '../api'
 import { ROLE_IDS } from '../constants'
 
 async function generateCardUid() {
@@ -19,21 +19,31 @@ function CreateEmployeeForm({ onClose, onCreated }) {
   const [role, setRole] = useState('employee')
   const [isActive, setIsActive] = useState(true)
   const [cardUid, setCardUid] = useState('')
+  const [password, setPassword] = useState('')
+  const [passwordConfirm, setPasswordConfirm] = useState('')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
+    if (password !== passwordConfirm) {
+      setError('Hesla se neshodují.')
+      return
+    }
+    if (password.length < 8) {
+      setError('Heslo musí mít alespoň 8 znaků.')
+      return
+    }
     setLoading(true)
     try {
       const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
       const name = capitalize(firstName)
       const surname = capitalize(lastName)
       const username = `${firstName.toLowerCase()}.${lastName.toLowerCase()}`
-      const newUser = await createUser(name, surname, username, email, ROLE_IDS[role], isActive)
+      const { userId } = await register(name, surname, username, email, ROLE_IDS[role], password)
       if (cardUid) {
-        await createCard(cardUid, newUser.id, true)
+        await createCard(cardUid, userId, true)
       }
       onCreated?.()
       onClose()
@@ -65,6 +75,18 @@ function CreateEmployeeForm({ onClose, onCreated }) {
           <input type="email" placeholder="Zadej email" value={email}
             onChange={e => setEmail(e.target.value)} required />
         </label>
+        <div className="form-row">
+          <label>
+            Heslo
+            <input type="password" placeholder="Min. 8 znaků" value={password}
+              onChange={e => setPassword(e.target.value)} required />
+          </label>
+          <label>
+            Potvrzení hesla
+            <input type="password" placeholder="Zopakuj heslo" value={passwordConfirm}
+              onChange={e => setPasswordConfirm(e.target.value)} required />
+          </label>
+        </div>
         <label>
           UID karty
           <div style={{ display: 'flex', gap: '8px' }}>

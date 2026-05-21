@@ -1,7 +1,10 @@
 import { createContext, useContext, useState } from 'react'
 import { getUserById, logout as logoutApi } from '../api'
+import { ROLE_IDS } from '../constants'
 
 const AuthContext = createContext(null)
+
+const ROLE_NAMES = Object.fromEntries(Object.entries(ROLE_IDS).map(([name, id]) => [id, name]))
 
 function decodeJwt(token) {
   const payload = token.split('.')[1]
@@ -17,7 +20,8 @@ export function AuthProvider({ children }) {
 
     const { sub: userId } = decodeJwt(tokens.accessToken)
     const userData = await getUserById(userId)
-    setUser({ ...userData, role: 'admin' })
+    const role = ROLE_NAMES[userData.role_id] || 'employee'
+    setUser({ ...userData, role })
   }
 
   const logout = async () => {

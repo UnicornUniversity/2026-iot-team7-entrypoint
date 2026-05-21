@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import Employees from './pages/Employees'
 import Attendance from './pages/Attendance'
 import Cards from './pages/Cards'
+import Terminal from './pages/Terminal'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
 function ProtectedRoute({ children, adminOnly = false }) {
@@ -29,8 +30,9 @@ function AppHeader() {
       <nav className="app-nav">
         {user?.role === 'admin' && <NavLink to="/dashboard">Dashboard</NavLink>}
         {user?.role === 'admin' && <NavLink to="/employees">Zaměstnanci</NavLink>}
-        {user?.role === 'admin' && <NavLink to="/cards">Karty</NavLink>}
         <NavLink to="/attendance">Docházka</NavLink>
+        {user?.role === 'admin' && <NavLink to="/cards">Karty</NavLink>}
+        {user?.role === 'admin' && <NavLink to="/terminal">Terminál</NavLink>}
       </nav>
       <button className="btn-logout" onClick={handleLogout}>Odhlásit se</button>
     </header>
@@ -51,6 +53,7 @@ function AppLayout() {
             <Route path="/employees" element={<ProtectedRoute adminOnly><Employees /></ProtectedRoute>} />
             <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
             <Route path="/cards" element={<ProtectedRoute><Cards /></ProtectedRoute>} />
+            <Route path="/terminal" element={<ProtectedRoute adminOnly><Terminal /></ProtectedRoute>} />
             <Route path="*" element={<div className="page-content"><h1>404</h1><p>Stránka nenalezena.</p></div>} />
           </Routes>
         </main>

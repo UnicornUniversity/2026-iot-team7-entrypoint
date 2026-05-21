@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { updateUser, deleteUser, createCard, updateCard, getAllCards } from '../api'
+import { updateUser, deleteUser, createCard, updateCard, getAllCards, deleteCard } from '../api'
 
 async function generateCardUid() {
   const cards = await getAllCards()
@@ -53,6 +53,7 @@ function EditEmployeeForm({ employee, cardUid: initialCardUid, onClose, onUpdate
     setError(null)
     setLoading(true)
     try {
+      if (initialCardUid) await deleteCard(initialCardUid)
       await deleteUser(employee.id)
       onUpdated?.()
       onClose()
