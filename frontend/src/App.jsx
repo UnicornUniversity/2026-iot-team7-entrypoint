@@ -29,6 +29,7 @@ function AppHeader() {
       <nav className="app-nav">
         {user?.role === 'admin' && <NavLink to="/dashboard">Dashboard</NavLink>}
         {user?.role === 'admin' && <NavLink to="/employees">Zaměstnanci</NavLink>}
+        {user?.role === 'admin' && <NavLink to="/cards">Karty</NavLink>}
         <NavLink to="/attendance">Docházka</NavLink>
       </nav>
       <button className="btn-logout" onClick={handleLogout}>Odhlásit se</button>

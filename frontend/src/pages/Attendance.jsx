@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { getAttendance, getUserAttendance, getUsers, getDevices } from '../api'
+import { getAttendance, getUserAttendance, getUsers, getDevices, getAllCards } from '../api'
 import { useAuth } from '../context/AuthContext'
 import AttendanceFilterCard from '../components/AttendanceFilterCard'
 import AttendanceEvidence from '../components/AttendanceEvidence'
@@ -18,6 +18,7 @@ function Attendance() {
   const [records, setRecords] = useState([])
   const [employees, setEmployees] = useState([])
   const [devices, setDevices] = useState([])
+  const [cards, setCards] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const today = new Date()
@@ -39,7 +40,7 @@ function Attendance() {
 
   useEffect(() => {
     const promises = isAdmin
-      ? [fetchRecords(), getUsers().then(setEmployees), getDevices().then(setDevices)]
+      ? [fetchRecords(), getUsers().then(setEmployees), getDevices().then(setDevices), getAllCards().then(setCards)]
       : [fetchRecords(), getDevices().then(setDevices)]
 
     Promise.all(promises)
@@ -53,9 +54,10 @@ function Attendance() {
   const deviceMap = {}
   devices.forEach(d => { deviceMap[d.id] = d.name })
 
+  // cardMap sestavujeme z karet, ne ze záznamů
   const cardMap = {}
-  records.forEach(r => {
-    if (!cardMap[r.user_id] && r.card_uid) cardMap[r.user_id] = r.card_uid
+  cards.forEach(c => {
+    if (c.is_active && c.user_id) cardMap[c.user_id] = c.card_uid
   })
 
   // aplikujeme filtry na záznamy
@@ -100,7 +102,7 @@ function Attendance() {
           <h2>Průchody terminálem</h2>
           {isAdmin && <AddAttendanceButton onAdded={fetchRecords} devices={devices} employees={employees} cardMap={cardMap} />}
         </div>
-        <AttendanceList records={filtered} isAdmin={isAdmin} deviceMap={deviceMap} />
+        <AttendanceList records={filtered} isAdmin={isAdmin} deviceMap={deviceMap} onUpdated={fetchRecords} />
       </div>
 
     </section>

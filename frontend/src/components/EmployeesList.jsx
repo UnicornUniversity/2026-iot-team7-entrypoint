@@ -1,13 +1,24 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { updateUser, deleteUser } from '../api'
+import { updateUser, deleteUser, createCard, updateCard, getAllCards } from '../api'
 
-function EditEmployeeForm({ employee, onClose, onUpdated }) {
+async function generateCardUid() {
+  const cards = await getAllCards()
+  const numbers = cards
+    .map(c => c.card_uid?.match(/^US(\d+)$/)?.[1])
+    .filter(Boolean)
+    .map(Number)
+  const next = numbers.length > 0 ? Math.max(...numbers) + 1 : 1234
+  return `US${next}`
+}
+
+function EditEmployeeForm({ employee, cardUid: initialCardUid, onClose, onUpdated }) {
   const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
   const [name, setName] = useState(employee.name)
   const [surname, setSurname] = useState(employee.surname)
   const [email, setEmail] = useState(employee.email || '')
   const [isActive, setIsActive] = useState(employee.is_active)
+  const [cardUid, setCardUid] = useState(initialCardUid || '')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
 
@@ -22,6 +33,12 @@ function EditEmployeeForm({ employee, onClose, onUpdated }) {
         email,
         isActive,
       })
+      // karta: pokud se změnila nebo přibyla
+      if (cardUid && !initialCardUid) {
+        await createCard(cardUid, employee.id, true)
+      } else if (cardUid && cardUid !== initialCardUid) {
+        await updateCard(initialCardUid, { userId: employee.id, isActive: true })
+      }
       onUpdated?.()
       onClose()
     } catch (err) {
@@ -56,6 +73,19 @@ function EditEmployeeForm({ employee, onClose, onUpdated }) {
             onChange={e => setSurname(e.target.value)} />
           <input placeholder="Email" value={email}
             onChange={e => setEmail(e.target.value)} />
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input
+              placeholder={initialCardUid ? 'UID karty' : 'Bez karty'}
+              value={cardUid}
+              onChange={e => setCardUid(e.target.value.toUpperCase())}
+              style={{ flex: 1 }}
+            />
+            {!initialCardUid && (
+              <button type="button" onClick={() => generateCardUid().then(setCardUid)}>
+                Vygenerovat
+              </button>
+            )}
+          </div>
           <label>
             <input type="checkbox" checked={isActive}
               onChange={e => setIsActive(e.target.checked)} />
@@ -164,6 +194,7 @@ function EmployeesList({ employees, statusMap, cardMap = {}, onUpdated }) {
               <EditEmployeeForm
                 key={`edit-${emp.id}`}
                 employee={emp}
+                cardUid={cardMap[emp.id]}
                 onClose={() => setSelectedId(null)}
                 onUpdated={onUpdated}
               />

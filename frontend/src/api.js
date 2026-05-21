@@ -68,6 +68,33 @@ export async function getDevices() {
   return res.json()
 }
 
+export async function updateCard(cardUid, fields) {
+  const res = await fetch(`${BASE_URL}/api/v1/cards/${cardUid}`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify(fields),
+  })
+  if (!res.ok) throw new Error('Chyba při úpravě karty')
+  return res.json()
+}
+
+export async function deleteCard(cardUid) {
+  const res = await fetch(`${BASE_URL}/api/v1/cards/${cardUid}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  if (!res.ok) throw new Error('Chyba při mazání karty')
+  return res.json()
+}
+
+export async function getAllCards() {
+  const res = await fetch(`${BASE_URL}/api/v1/cards`, {
+    headers: authHeaders(),
+  })
+  if (!res.ok) throw new Error('Chyba při načítání karet')
+  return res.json()
+}
+
 export async function getCards(cardUid) {
   const res = await fetch(`${BASE_URL}/api/v1/cards/${cardUid}`, {
     headers: authHeaders(),
@@ -76,16 +103,30 @@ export async function getCards(cardUid) {
   return res.json()
 }
 
+export async function updateAttendance(id, fields) {
+  const res = await fetch(`${BASE_URL}/api/v1/attendance/${id}`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify(fields),
+  })
+  if (!res.ok) throw new Error('Chyba při úpravě záznamu')
+  return res.json()
+}
+
+export async function deleteAttendance(id) {
+  const res = await fetch(`${BASE_URL}/api/v1/attendance/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  if (!res.ok) throw new Error('Chyba při mazání záznamu')
+  return res.json()
+}
+
 export async function logAttendance(cardUid, deviceId, direction, timestamp) {
   const res = await fetch(`${BASE_URL}/api/v1/attendance`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({
-      card_uid: cardUid,
-      device_id: deviceId,
-      direction,
-      timestamp,
-    }),
+    body: JSON.stringify({ cardUid, deviceId, direction, timestamp }),
   })
   if (!res.ok) throw new Error('Chyba při přidávání záznamu')
   return res.json()
@@ -106,7 +147,13 @@ export async function deleteUser(id) {
     method: 'DELETE',
     headers: authHeaders(),
   })
-  if (!res.ok) throw new Error('Chyba při mazání zaměstnance')
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    if (data.message?.includes('foreign key')) {
+      throw new Error('Zaměstnanec má přiřazenou kartu nebo záznamy docházky — nejdříve je odstraň.')
+    }
+    throw new Error('Chyba při mazání zaměstnance')
+  }
   return res.json()
 }
 

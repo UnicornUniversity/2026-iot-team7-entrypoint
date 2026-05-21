@@ -1,6 +1,16 @@
 import { useState } from 'react'
-import { createUser } from '../api'
+import { createUser, createCard, getAllCards } from '../api'
 import { ROLE_IDS } from '../constants'
+
+async function generateCardUid() {
+  const cards = await getAllCards()
+  const numbers = cards
+    .map(c => c.card_uid?.match(/^US(\d+)$/)?.[1])
+    .filter(Boolean)
+    .map(Number)
+  const next = numbers.length > 0 ? Math.max(...numbers) + 1 : 1234
+  return `US${next}`
+}
 
 function CreateEmployeeForm({ onClose, onCreated }) {
   const [firstName, setFirstName] = useState('')
@@ -8,6 +18,7 @@ function CreateEmployeeForm({ onClose, onCreated }) {
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('employee')
   const [isActive, setIsActive] = useState(true)
+  const [cardUid, setCardUid] = useState('')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
 
@@ -20,7 +31,10 @@ function CreateEmployeeForm({ onClose, onCreated }) {
       const name = capitalize(firstName)
       const surname = capitalize(lastName)
       const username = `${firstName.toLowerCase()}.${lastName.toLowerCase()}`
-      await createUser(name, surname, username, email, ROLE_IDS[role], isActive)
+      const newUser = await createUser(name, surname, username, email, ROLE_IDS[role], isActive)
+      if (cardUid) {
+        await createCard(cardUid, newUser.id, true)
+      }
       onCreated?.()
       onClose()
     } catch (err) {
@@ -50,6 +64,20 @@ function CreateEmployeeForm({ onClose, onCreated }) {
           Email
           <input type="email" placeholder="Zadej email" value={email}
             onChange={e => setEmail(e.target.value)} required />
+        </label>
+        <label>
+          UID karty
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              placeholder="Nepovinné — nebo vygeneruj"
+              value={cardUid}
+              onChange={e => setCardUid(e.target.value.toUpperCase())}
+              style={{ flex: 1 }}
+            />
+            <button type="button" onClick={() => generateCardUid().then(setCardUid)}>
+              Vygenerovat
+            </button>
+          </div>
         </label>
         <div className="form-row" style={{ alignItems: 'center' }}>
           <label>

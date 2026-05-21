@@ -37,7 +37,7 @@ function AddAttendanceButton({ onAdded, devices = [], employees = [], cardMap = 
   const handleSubmit = (e) => {
     e.preventDefault()
     setMessage(null)
-    logAttendance(cardUid, deviceId, direction, timestamp)
+    logAttendance(cardUid, deviceId, direction, new Date(timestamp).toISOString())
       .then(() => {
         onAdded()
         handleClose()

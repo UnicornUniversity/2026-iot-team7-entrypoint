@@ -1,22 +1,43 @@
 import { useState } from 'react'
+import { updateAttendance, deleteAttendance } from '../api'
 
-function EditAttendanceForm({ record, onClose, deviceMap }) {
+function EditAttendanceForm({ record, onClose, onUpdated, deviceMap }) {
   const [direction, setDirection] = useState(record.direction)
   const [deviceId, setDeviceId] = useState(record.device_id)
   const [timestamp, setTimestamp] = useState(
     new Date(record.timestamp).toISOString().slice(0, 16)
   )
-  const [message, setMessage] = useState(null)
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(false)
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
-    // TODO: nahradit až BE dodá PATCH /api/v1/attendance/:id
-    setMessage('Úprava záznamu zatím není dostupná.')
+    setError(null)
+    setLoading(true)
+    try {
+      await updateAttendance(record.id, { direction, deviceId, timestamp: new Date(timestamp).toISOString() })
+      onUpdated?.()
+      onClose()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleDelete = () => {
-    // TODO: nahradit až BE dodá DELETE /api/v1/attendance/:id
-    setMessage('Smazání záznamu zatím není dostupné.')
+  const handleDelete = async () => {
+    if (!confirm('Opravdu smazat tento záznam?')) return
+    setError(null)
+    setLoading(true)
+    try {
+      await deleteAttendance(record.id)
+      onUpdated?.()
+      onClose()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -38,12 +59,12 @@ function EditAttendanceForm({ record, onClose, deviceMap }) {
           </select>
 
           <div className="edit-form-actions">
-            <button type="submit" className="btn-save">Uložit</button>
-            <button type="button" className="btn-delete" onClick={handleDelete}>Smazat</button>
+            <button type="submit" className="btn-save" disabled={loading}>Uložit</button>
+            <button type="button" className="btn-delete" onClick={handleDelete} disabled={loading}>Smazat</button>
             <button type="button" className="btn-cancel" onClick={onClose}>Zrušit</button>
           </div>
         </form>
-        {message && <p className="edit-message">{message}</p>}
+        {error && <p className="edit-message" style={{ color: 'red' }}>{error}</p>}
       </td>
     </tr>
   )
@@ -61,7 +82,7 @@ function AttendanceRecordItem({ record, isSelected, onSelect, deviceMap }) {
   )
 }
 
-function AttendanceList({ records, isAdmin, deviceMap = {} }) {
+function AttendanceList({ records, isAdmin, deviceMap = {}, onUpdated }) {
   const [sortKey, setSortKey] = useState('timestamp')
   const [sortDir, setSortDir] = useState('desc')
   const [selectedId, setSelectedId] = useState(null) // id vybraného záznamu
@@ -132,6 +153,7 @@ function AttendanceList({ records, isAdmin, deviceMap = {} }) {
                 key={`edit-${record.id}`}
                 record={record}
                 onClose={() => setSelectedId(null)}
+                onUpdated={onUpdated}
                 deviceMap={deviceMap}
               />
             )}

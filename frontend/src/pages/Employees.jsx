@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { getUsers, getAttendance } from '../api'
+import { getUsers, getAttendance, getAllCards } from '../api'
 import EmployeesList from '../components/EmployeesList'
 import CreateEmployeeForm from '../components/CreateEmployeeForm'
 import Modal from '../components/Modal'
@@ -17,8 +17,8 @@ function Employees() {
   const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
-    Promise.all([getUsers(), getAttendance()])
-      .then(([users, records]) => {
+    Promise.all([getUsers(), getAttendance(), getAllCards()])
+      .then(([users, records, cards]) => {
         setEmployees(users)
 
         // seřadíme záznamy od nejnovějšího a vezmeme poslední na uživatele
@@ -37,12 +37,12 @@ function Employees() {
         })
         setStatusMap(map)
 
-        // sestavíme mapu userId → card_uid z prvního nalezeného záznamu
-        const cards = {}
-        records.forEach(r => {
-          if (!cards[r.user_id] && r.card_uid) cards[r.user_id] = r.card_uid
+        // sestavíme mapu userId → card_uid z karet
+        const cardMapping = {}
+        cards.forEach(c => {
+          if (c.is_active && c.user_id) cardMapping[c.user_id] = c.card_uid
         })
-        setCardMap(cards)
+        setCardMap(cardMapping)
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
