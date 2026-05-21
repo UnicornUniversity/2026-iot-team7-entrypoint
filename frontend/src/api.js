@@ -18,6 +18,16 @@ export async function login(email, password) {
   return res.json()
 }
 
+export async function logout() {
+  const refreshToken = localStorage.getItem('refreshToken')
+  if (!refreshToken) return
+  await fetch(`${BASE_URL}/api/v1/auth/logout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken }),
+  })
+}
+
 export async function getUserById(id) {
   const res = await fetch(`${BASE_URL}/api/v1/users/${id}`, {
     headers: authHeaders(),
