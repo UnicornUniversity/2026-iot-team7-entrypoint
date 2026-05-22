@@ -96,7 +96,7 @@ function CreateEmployeeForm({ onClose, onCreated }) {
               onChange={e => setCardUid(e.target.value.toUpperCase())}
               style={{ flex: 1 }}
             />
-            <button type="button" onClick={() => generateCardUid().then(setCardUid)}>
+            <button type="button" className="btn-secondary" onClick={() => generateCardUid().then(setCardUid)}>
               Vygenerovat
             </button>
           </div>

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { getAttendance, getUserAttendance, getUsers, getDevices, getAllCards } from '../api'
 import { useAuth } from '../context/AuthContext'
+import Spinner from '../components/Spinner'
 import AttendanceFilterCard from '../components/AttendanceFilterCard'
 import AttendanceEvidence from '../components/AttendanceEvidence'
 import AttendanceList from '../components/AttendanceList'
@@ -68,7 +69,7 @@ function Attendance() {
     .map(r => ({ ...r, fullName: userMap[r.user_id] || '—' }))
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
 
-  if (loading) return <p>Načítám...</p>
+  if (loading) return <Spinner />
   if (error) return <p>Chyba: {error}</p>
 
   return (
@@ -91,13 +92,15 @@ function Attendance() {
       />
 
       {/* Blok 2 — evidence docházky */}
-      <div className="attendance-block">
-        <h2>Evidence docházky</h2>
+      <div className="widget-card">
+        <div className="block-header">
+          <h2>Evidence docházky</h2>
+        </div>
         <AttendanceEvidence records={filtered} userId={filters.userId} />
       </div>
 
       {/* Blok 3 — průchody terminálem */}
-      <div className="attendance-block">
+      <div className="widget-card">
         <div className="block-header">
           <h2>Průchody terminálem</h2>
           {isAdmin && <AddAttendanceButton onAdded={fetchRecords} devices={devices} employees={employees} cardMap={cardMap} />}

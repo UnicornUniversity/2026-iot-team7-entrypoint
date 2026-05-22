@@ -62,6 +62,7 @@ function AttendanceEvidence({ records, userId }) {
   if (rows.length === 0) return <p>Žádné záznamy pro vybraného zaměstnance.</p>
 
   return (
+    <div className="table-scroll">
     <table>
       <thead>
         <tr>
@@ -95,6 +96,7 @@ function AttendanceEvidence({ records, userId }) {
         })}
       </tbody>
     </table>
+    </div>
   )
 }
 
