@@ -11,7 +11,7 @@
         "type": "junction",
         "z": "tab1",
         "x": 1350,
-        "y": 500,
+        "y": 640,
         "wires": [
             [
                 "node_serial_out",
@@ -59,7 +59,7 @@
                 "t": "set",
                 "p": "server_host",
                 "pt": "global",
-                "to": "http://192.168.0.90:8000",
+                "to": "https://2026-iot-team7-entrypoint.fly.dev",
                 "tot": "str"
             },
             {
@@ -87,7 +87,7 @@
                 "t": "set",
                 "p": "gateway_key",
                 "pt": "global",
-                "to": "GWAY-99-SECRET-XYZ",
+                "to": "SN3221409A",
                 "tot": "str"
             },
             {
@@ -96,6 +96,34 @@
                 "pt": "global",
                 "to": "false",
                 "tot": "bool"
+            },
+            {
+                "t": "set",
+                "p": "auth_register_path",
+                "pt": "global",
+                "to": "/api/v1/auth/register",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "auth_login_path",
+                "pt": "global",
+                "to": "/api/v1/auth/login",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "auth_refresh_path",
+                "pt": "global",
+                "to": "/api/v1/auth/refresh",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "auth_logout_path",
+                "pt": "global",
+                "to": "/api/v1/auth/logout",
+                "tot": "str"
             }
         ],
         "action": "",
@@ -137,27 +165,13 @@
         ]
     },
     {
-        "id": "node_db_exec",
-        "type": "sqlite",
-        "z": "tab1",
-        "mydb": "sql1",
-        "sqlpath": "msg.topic",
-        "sql": "",
-        "name": "Local DB",
-        "x": 1470,
-        "y": 120,
-        "wires": [
-            []
-        ]
-    },
-    {
         "id": "node_comment_sync",
         "type": "comment",
         "z": "tab1",
         "name": "2. OFFLINE SYNC LOOP",
         "info": "Periodically checks for queued local data and sends to server.",
         "x": 250,
-        "y": 150,
+        "y": 280,
         "wires": []
     },
     {
@@ -172,26 +186,10 @@
         "finalize": "",
         "libs": [],
         "x": 290,
-        "y": 190,
+        "y": 330,
         "wires": [
             [
                 "node_db_exec_read"
-            ]
-        ]
-    },
-    {
-        "id": "node_db_exec_read",
-        "type": "sqlite",
-        "z": "tab1",
-        "mydb": "sql1",
-        "sqlpath": "msg.topic",
-        "sql": "",
-        "name": "Read Queue",
-        "x": 490,
-        "y": 190,
-        "wires": [
-            [
-                "node_prepare_batch"
             ]
         ]
     },
@@ -200,14 +198,15 @@
         "type": "function",
         "z": "tab1",
         "name": "Prepare / Check Empty",
-        "func": "if (!msg.payload || msg.payload.length === 0) {\n    return [null, { type: \"queue_empty\" }];\n}\n\nlet events = msg.payload;\nlet ids = events.map(e => e.id);\n\nmsg.event_ids = ids;\nmsg.payload = {\n    gateway_key: global.get(\"gateway_key\"),\n    events: events.map(e => ({ uid: e.uid, event: e.event, timestamp: e.timestamp }))\n};\nmsg.url = global.get(\"server_host\") + global.get(\"batch_path\");\nmsg.requestTimeout = 5000;\n\nnode.status({fill:\"blue\", shape:\"dot\", text:\"Syncing \" + events.length + \" events\"});\nreturn [msg, null];",
+        "func": "if (!msg.payload || msg.payload.length === 0) {\n    return [null, { type: \"queue_empty\" }];\n}\n\nlet events = msg.payload;\nmsg.event_ids = events.map(e => e.id);\n\nmsg.payload = {\n    \"deviceId\": global.get(\"gateway_key\"),\n    \"events\": events.map(e => ({\n        \"cardUid\": e.uid,\n        \"direction\": (e.event === \"arrival\" || e.event === \"in\") ? \"in\" : \"out\",\n        \"timestamp\": e.timestamp\n    }))\n};\n\nmsg.url = global.get(\"server_host\") + global.get(\"batch_path\");\nmsg.requestTimeout = 5000;\n\nlet token = global.get(\"accessToken\");\nmsg.headers = {\n    \"Authorization\": \"Bearer \" + token,\n    \"Content-Type\": \"application/json\"\n};\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: \"Syncing \" + events.length + \" events\" });\nreturn [msg, null];",
         "outputs": 2,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
         "x": 700,
-        "y": 190,
+        "y": 330,
         "wires": [
             [
                 "node_http_batch_post"
@@ -226,14 +225,15 @@
         "ret": "obj",
         "paytoqs": "ignore",
         "url": "",
-        "tls": "",
+        "tls": "ef751a3fa78a733c",
         "persist": false,
         "proxy": "",
+        "insecureHTTPParser": false,
         "authType": "",
         "senderr": false,
         "headers": [],
         "x": 910,
-        "y": 190,
+        "y": 330,
         "wires": [
             [
                 "node_cleanup_db"
@@ -252,7 +252,7 @@
         "finalize": "",
         "libs": [],
         "x": 1110,
-        "y": 190,
+        "y": 330,
         "wires": [
             [
                 "node_db_exec"
@@ -269,7 +269,7 @@
         "name": "3. SERVER HEARTBEAT",
         "info": "Monitors server health with exponential backoff.",
         "x": 250,
-        "y": 280,
+        "y": 420,
         "wires": []
     },
     {
@@ -290,7 +290,7 @@
         "payload": "HB_TRIGGER",
         "payloadType": "str",
         "x": 250,
-        "y": 320,
+        "y": 460,
         "wires": [
             [
                 "node_heartbeat_controller"
@@ -309,7 +309,7 @@
         "finalize": "",
         "libs": [],
         "x": 480,
-        "y": 320,
+        "y": 460,
         "wires": [
             [
                 "node_heartbeat_prep"
@@ -328,7 +328,7 @@
         "finalize": "",
         "libs": [],
         "x": 680,
-        "y": 320,
+        "y": 460,
         "wires": [
             [
                 "node_heartbeat_http"
@@ -344,14 +344,15 @@
         "ret": "obj",
         "paytoqs": "ignore",
         "url": "",
-        "tls": "",
+        "tls": "ef751a3fa78a733c",
         "persist": false,
         "proxy": "",
+        "insecureHTTPParser": false,
         "authType": "",
         "senderr": false,
         "headers": [],
         "x": 860,
-        "y": 320,
+        "y": 460,
         "wires": [
             [
                 "node_heartbeat_update"
@@ -370,7 +371,7 @@
         "finalize": "",
         "libs": [],
         "x": 1070,
-        "y": 320,
+        "y": 460,
         "wires": [
             [
                 "node_heartbeat_controller"
@@ -390,22 +391,8 @@
         "name": "4. ARDUINO COMMUNICATION",
         "info": "Handles live scanning traffic and real-time server responses.",
         "x": 270,
-        "y": 400,
+        "y": 540,
         "wires": []
-    },
-    {
-        "id": "node_serial_in",
-        "type": "serial in",
-        "z": "tab1",
-        "name": "Arduino In",
-        "serial": "s1",
-        "x": 240,
-        "y": 440,
-        "wires": [
-            [
-                "node_safe_json_parse"
-            ]
-        ]
     },
     {
         "id": "node_safe_json_parse",
@@ -419,7 +406,7 @@
         "finalize": "",
         "libs": [],
         "x": 430,
-        "y": 440,
+        "y": 580,
         "wires": [
             [
                 "node_debug_from_arduino",
@@ -441,7 +428,7 @@
         "statusVal": "",
         "statusType": "auto",
         "x": 650,
-        "y": 500,
+        "y": 640,
         "wires": []
     },
     {
@@ -449,14 +436,15 @@
         "type": "function",
         "z": "tab1",
         "name": "Filter & Enrich",
-        "func": "if (msg.payload.type === \"system\") {\n    return [null, { payload: \"HB_TRIGGER\" }];\n}\n\nif (msg.payload.type === \"attendance\") {\n    msg.saved_uid = msg.payload.uid;\n    msg.saved_event = msg.payload.event;\n    msg.saved_timestamp = new Date().toISOString();\n\n    msg.payload.gateway_key = global.get(\"gateway_key\");\n    msg.payload.timestamp = msg.saved_timestamp;\n    msg.url = global.get(\"server_host\") + global.get(\"attendance_path\");\n    msg.requestTimeout = 5000;\n    \n    return [msg, null];\n}\n\nreturn null;",
+        "func": "if (msg.payload.type === \"system\") {\n    return [null, { payload: \"HB_TRIGGER\" }];\n}\n\nif (msg.payload.type === \"attendance\") {\n    msg.saved_uid = msg.payload.uid;\n    msg.saved_event = (msg.payload.event === \"arrival\") ? \"in\" : \"out\";\n    msg.saved_timestamp = new Date().toISOString();\n\n    msg.payload = {\n        \"cardUid\": msg.saved_uid,\n        \"deviceId\": global.get(\"gateway_key\"),\n        \"direction\": msg.saved_event,\n        \"timestamp\": msg.saved_timestamp\n    };\n\n    msg.url = global.get(\"server_host\") + global.get(\"attendance_path\");\n    msg.requestTimeout = 5000;\n\n    let token = global.get(\"accessToken\");\n    msg.headers = {\n        \"Authorization\": \"Bearer \" + token,\n        \"Content-Type\": \"application/json\"\n    };\n    let logMessage = \"=== LIVE SCANNED PAYLOAD SENT TO SERVER ===\\n\" + JSON.stringify(msg.payload, null, 2);\n\n    node.log(logMessage);\n\n    return [msg, null];\n}\nreturn null;",
         "outputs": 2,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
         "x": 650,
-        "y": 440,
+        "y": 580,
         "wires": [
             [
                 "node_http_post"
@@ -476,18 +464,19 @@
         "ret": "obj",
         "paytoqs": "ignore",
         "url": "",
-        "tls": "",
+        "tls": "ef751a3fa78a733c",
         "persist": false,
         "proxy": "",
+        "insecureHTTPParser": false,
         "authType": "",
         "senderr": false,
         "headers": [],
         "x": 830,
-        "y": 440,
+        "y": 580,
         "wires": [
             [
-                "node_handle_resp",
-                "node_debug_from_backend"
+                "node_debug_from_backend",
+                "8b3133e785ee466c"
             ]
         ]
     },
@@ -505,7 +494,7 @@
         "statusVal": "",
         "statusType": "auto",
         "x": 1060,
-        "y": 500,
+        "y": 640,
         "wires": []
     },
     {
@@ -519,8 +508,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1060,
-        "y": 440,
+        "x": 1250,
+        "y": 580,
         "wires": [
             [
                 "node_output_junction"
@@ -540,7 +529,7 @@
         "name": "5. SIMULATION & MAINTENANCE",
         "info": "Tools for testing and system time management.",
         "x": 280,
-        "y": 520,
+        "y": 660,
         "wires": []
     },
     {
@@ -561,7 +550,7 @@
         "payload": "",
         "payloadType": "date",
         "x": 250,
-        "y": 560,
+        "y": 700,
         "wires": [
             [
                 "node_sim_set_payload"
@@ -609,7 +598,7 @@
         "to": "",
         "reg": false,
         "x": 430,
-        "y": 560,
+        "y": 700,
         "wires": [
             [
                 "node_filter_logic"
@@ -634,7 +623,7 @@
         "payload": "",
         "payloadType": "date",
         "x": 260,
-        "y": 640,
+        "y": 780,
         "wires": [
             [
                 "node_format_time"
@@ -653,7 +642,7 @@
         "finalize": "",
         "libs": [],
         "x": 830,
-        "y": 640,
+        "y": 780,
         "wires": [
             [
                 "node_output_junction"
@@ -673,9 +662,51 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1470,
-        "y": 440,
+        "x": 1850,
+        "y": 600,
         "wires": []
+    },
+    {
+        "id": "node_db_exec",
+        "type": "sqlite",
+        "z": "tab1",
+        "mydb": "sql1",
+        "sql": "",
+        "name": "Local DB",
+        "x": 1860,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "node_db_exec_read",
+        "type": "sqlite",
+        "z": "tab1",
+        "mydb": "sql1",
+        "sql": "",
+        "name": "Read Queue",
+        "x": 490,
+        "y": 330,
+        "wires": [
+            [
+                "node_prepare_batch"
+            ]
+        ]
+    },
+    {
+        "id": "node_serial_in",
+        "type": "serial in",
+        "z": "tab1",
+        "name": "Arduino In",
+        "serial": "s1",
+        "x": 240,
+        "y": 580,
+        "wires": [
+            [
+                "node_safe_json_parse"
+            ]
+        ]
     },
     {
         "id": "node_serial_out",
@@ -683,9 +714,225 @@
         "z": "tab1",
         "name": "Arduino Out",
         "serial": "s1",
-        "x": 1470,
-        "y": 500,
+        "x": 1850,
+        "y": 680,
         "wires": []
+    },
+    {
+        "id": "a01bbbc168ae0765",
+        "type": "inject",
+        "z": "tab1",
+        "name": "On Boot",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 240,
+        "y": 200,
+        "wires": [
+            [
+                "c906ba37f3b1e0e7"
+            ]
+        ]
+    },
+    {
+        "id": "c906ba37f3b1e0e7",
+        "type": "function",
+        "z": "tab1",
+        "name": "Prep login",
+        "func": "msg.url = global.get(\"server_host\") + global.get(\"auth_login_path\");\nmsg.payload = {\n    \"email\": \"admin@admin.cz\",\n    \"password\": \"adminadmin\"\n};\nmsg.force = true;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 200,
+        "wires": [
+            [
+                "4612d6184764819d"
+            ]
+        ]
+    },
+    {
+        "id": "4612d6184764819d",
+        "type": "http request",
+        "z": "tab1",
+        "name": "Login",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "ef751a3fa78a733c",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 630,
+        "y": 200,
+        "wires": [
+            [
+                "172723477c924a4d"
+            ]
+        ]
+    },
+    {
+        "id": "172723477c924a4d",
+        "type": "change",
+        "z": "tab1",
+        "name": "Save tokens",
+        "rules": [
+            {
+                "t": "set",
+                "p": "accessToken",
+                "pt": "global",
+                "to": "payload.accessToken",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "refreshToken",
+                "pt": "global",
+                "to": "payload.refreshToken",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 850,
+        "y": 200,
+        "wires": [
+            [
+                "node_heartbeat_controller"
+            ]
+        ]
+    },
+    {
+        "id": "8b3133e785ee466c",
+        "type": "switch",
+        "z": "tab1",
+        "name": "401 check",
+        "property": "statusCode",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "401",
+                "vt": "str"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1030,
+        "y": 580,
+        "wires": [
+            [
+                "71cb0aa882076832"
+            ],
+            [
+                "node_handle_resp"
+            ]
+        ]
+    },
+    {
+        "id": "71cb0aa882076832",
+        "type": "function",
+        "z": "tab1",
+        "name": "Prep reresh",
+        "func": "context.set(\"original_msg\", {\n    url: msg.url,\n    payload: msg.payload,\n    saved_uid: msg.saved_uid,\n    saved_event: msg.saved_event,\n    saved_timestamp: msg.saved_timestamp\n});\n\nmsg.url = global.get(\"server_host\") + global.get(\"auth_refresh_path\");\nmsg.payload = {\n    \"refreshToken\": global.get(\"refreshToken\")\n};\nmsg.headers = {\n    \"Content-Type\": \"application/json\"\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1270,
+        "y": 520,
+        "wires": [
+            [
+                "d93042c8e880435a"
+            ]
+        ]
+    },
+    {
+        "id": "d93042c8e880435a",
+        "type": "http request",
+        "z": "tab1",
+        "name": "Refresh",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "ef751a3fa78a733c",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1460,
+        "y": 520,
+        "wires": [
+            [
+                "67b4028bfdf6a760"
+            ]
+        ]
+    },
+    {
+        "id": "67b4028bfdf6a760",
+        "type": "function",
+        "z": "tab1",
+        "name": "Rotate and retry",
+        "func": "if (msg.statusCode === 200 && msg.payload && msg.payload.accessToken) {\n    global.set(\"accessToken\", msg.payload.accessToken);\n    global.set(\"refreshToken\", msg.payload.refreshToken);\n    node.status({ fill: \"green\", shape: \"dot\", text: \"Tokens Rotated\" });\n\n    let original = context.get(\"original_msg\");\n    if (!original) {\n        node.status({ fill: \"red\", shape: \"ring\", text: \"Lost origin context\" });\n        return null;\n    }\n\n    msg.url = original.url;\n    msg.payload = original.payload;\n    msg.saved_uid = original.saved_uid;\n    msg.saved_event = original.saved_event;\n    msg.saved_timestamp = original.saved_timestamp;\n\n    msg.headers = {\n        \"Authorization\": \"Bearer \" + global.get(\"accessToken\"),\n        \"Content-Type\": \"application/json\"\n    };\n\n    return msg;\n} else {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Session completely expired. Relog required.\" });\n    global.set(\"server_online\", false);\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1660,
+        "y": 520,
+        "wires": [
+            [
+                "node_http_post"
+            ]
+        ]
+    },
+    {
+        "id": "ef751a3fa78a733c",
+        "type": "tls-config",
+        "name": "mtls",
+        "cert": "",
+        "key": "",
+        "ca": "",
+        "certname": "client-cert.pem",
+        "keyname": "client-key.pem",
+        "caname": "",
+        "servername": "",
+        "verifyservercert": false,
+        "alpnprotocol": ""
     },
     {
         "id": "sql1",
@@ -709,7 +956,15 @@
         "newline": "\\n",
         "bin": "false",
         "out": "char",
-        "addchar": "",
-        "responsetime": "10000"
+        "addchar": ""
+    },
+    {
+        "id": "c777a82bd31c1d08",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-node-sqlite": "2.0.1",
+            "node-red-node-serialport": "2.0.3"
+        }
     }
 ]
