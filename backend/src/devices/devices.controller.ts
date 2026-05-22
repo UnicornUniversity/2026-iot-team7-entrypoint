@@ -55,4 +55,11 @@ export class DevicesController {
     deleteDevice(@Param('id') id: string) {
         return this.deviceService.deleteDevice(id);
     }
+
+    @ApiOperation({ summary: 'Heartbeat for each gateway' })
+    @ApiParam({ name: 'uid', example: '268de211-2e35-41d3-a297-1bc61ce92da6' })
+    @Patch('/heartbeat/:uid')
+    heartbeat(@Param('uid') uid: string) {
+        return this.deviceService.heartbeat(uid);
+    }
 }

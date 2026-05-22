@@ -1,11 +1,16 @@
-import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableException} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateAccessLogDto } from './dto/createAccessLog.dto';
 import { UpdateAccessLogDto } from './dto/updateAccessLog.dto';
+import { DevicesService } from '../devices/devices.service';
+import { DeviceStatus } from '../devices/enums/deviceStatus.enum';
 
 @Injectable()
 export class AttendanceService {
-    constructor(private supabase: SupabaseService) {}
+    constructor(
+        private supabase: SupabaseService,
+        private deviceService: DevicesService
+    ) {}
     async getAllAttendances() {
         const { data, error } = await this.supabase.getClient().from('access_logs').select('*');
 
@@ -45,15 +50,18 @@ export class AttendanceService {
             .select('*')
             .eq('device_uid', dto.deviceUid)
             .single();
-        
+
+        const computedStatus = this.deviceService.getDeviceStatus(device);
+
         if (deviceError || !device) {
             if (deviceError?.code === 'PGRST116')
                 throw new NotFoundException('Gateway was not found or was not registered yet');
             throw deviceError;
         }
 
-        if (device?.status != 'online')
-            throw new ServiceUnavailableException('Device is not online');
+        if (computedStatus != DeviceStatus.ONLINE) throw new ServiceUnavailableException('Device is not online');
+
+        this.deviceService.updateLastSeen(device.id);
 
         if (cardError || !card) {
             await this.supabase
@@ -91,7 +99,7 @@ export class AttendanceService {
             ...data,
             name: card.users.name,
             surname: card.users.surname,
-            username: card.users.username
+            username: card.users.username,
         };
     }
 
