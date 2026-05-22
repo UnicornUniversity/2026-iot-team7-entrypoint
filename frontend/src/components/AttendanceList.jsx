@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { updateAttendance, deleteAttendance } from '../api'
+import Modal from './Modal'
 
 function EditAttendanceForm({ record, onClose, onUpdated, deviceMap }) {
   const [direction, setDirection] = useState(record.direction)
@@ -41,41 +42,52 @@ function EditAttendanceForm({ record, onClose, onUpdated, deviceMap }) {
   }
 
   return (
-    <tr className="edit-row">
-      <td colSpan={4}>
-        <form className="edit-form" onSubmit={handleSave}>
-          <input type="datetime-local" value={timestamp}
-            onChange={e => setTimestamp(e.target.value)} />
-
-          <select value={direction} onChange={e => setDirection(e.target.value)}>
-            <option value="in">Příchod</option>
-            <option value="out">Odchod</option>
-          </select>
-
+    <Modal onClose={onClose}>
+      <h2 style={{ marginTop: 0 }}>Upravit z&#225;znam</h2>
+      <form className="create-form" onSubmit={handleSave}>
+        <div className="form-row">
+          <label>
+            Datum a &#269;as
+            <input type="datetime-local" value={timestamp}
+              onChange={e => setTimestamp(e.target.value)} />
+          </label>
+          <label>
+            Sm&#283;r
+            <select value={direction} onChange={e => setDirection(e.target.value)}>
+              <option value="in">P&#345;&#237;chod</option>
+              <option value="out">Odchod</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          Za&#345;&#237;zen&#237;
           <select value={deviceId} onChange={e => setDeviceId(e.target.value)}>
             {Object.entries(deviceMap).map(([id, name]) => (
               <option key={id} value={id}>{name}</option>
             ))}
           </select>
-
-          <div className="edit-form-actions">
-            <button type="submit" className="btn-save" disabled={loading}>Uložit</button>
-            <button type="button" className="btn-delete" onClick={handleDelete} disabled={loading}>Smazat</button>
-            <button type="button" className="btn-cancel" onClick={onClose}>Zrušit</button>
-          </div>
-        </form>
-        {error && <p className="edit-message" style={{ color: 'red' }}>{error}</p>}
-      </td>
-    </tr>
+        </label>
+        {error && <p style={{ color: 'red', margin: 0 }}>{error}</p>}
+        <div className="edit-form-actions">
+          <button type="submit" className="btn-save" disabled={loading}>Ulo&#382;it</button>
+          <button type="button" className="btn-delete" onClick={handleDelete} disabled={loading}>Smazat</button>
+          <button type="button" className="btn-cancel" onClick={onClose}>Zru&#353;it</button>
+        </div>
+      </form>
+    </Modal>
   )
 }
 
 function AttendanceRecordItem({ record, isSelected, onSelect, deviceMap }) {
   return (
-    <tr style={{ cursor: 'pointer', background: isSelected ? '#f1f5f9' : '' }}
+    <tr style={{ cursor: 'pointer', background: isSelected ? '#e0e7ff' : '' }}
       onClick={onSelect}>
       <td>{new Date(record.timestamp).toLocaleString('cs-CZ')}</td>
-      <td>{record.direction === 'in' ? 'Příchod' : 'Odchod'}</td>
+      <td>
+        <span className={`badge ${record.direction === 'in' ? 'badge-green' : 'badge-gray'}`}>
+          {record.direction === 'in' ? 'Příchod' : 'Odchod'}
+        </span>
+      </td>
       <td>{record.fullName || '—'}</td>
       <td>{deviceMap[record.device_id] || record.device_id}</td>
     </tr>
@@ -85,7 +97,7 @@ function AttendanceRecordItem({ record, isSelected, onSelect, deviceMap }) {
 function AttendanceList({ records, isAdmin, deviceMap = {}, onUpdated }) {
   const [sortKey, setSortKey] = useState('timestamp')
   const [sortDir, setSortDir] = useState('desc')
-  const [selectedId, setSelectedId] = useState(null) // id vybraného záznamu
+  const [selectedId, setSelectedId] = useState(null)
 
   const handleSort = (key) => {
     if (sortKey === key) {
@@ -118,49 +130,52 @@ function AttendanceList({ records, isAdmin, deviceMap = {}, onUpdated }) {
     return 0
   })
 
-  if (sorted.length === 0) return <p>Žádné záznamy.</p>
+  if (sorted.length === 0) return <p>&#381;&#225;dn&#233; z&#225;znamy.</p>
+
+  const selectedRecord = isAdmin ? sorted.find(r => r.id === selectedId) : null
 
   return (
-    <table>
-      <thead>
-        <tr>
-          <th style={{ cursor: 'pointer' }} onClick={() => handleSort('timestamp')}>
-            Datum{arrow('timestamp')}
-          </th>
-          <th style={{ cursor: 'pointer' }} onClick={() => handleSort('direction')}>
-            Směr{arrow('direction')}
-          </th>
-          <th style={{ cursor: 'pointer' }} onClick={() => handleSort('fullName')}>
-            Zaměstnanec{arrow('fullName')}
-          </th>
-          <th style={{ cursor: 'pointer' }} onClick={() => handleSort('device')}>
-            Zařízení{arrow('device')}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {sorted.map(record => (
-          <>
-            <AttendanceRecordItem
-              key={record.id}
-              record={record}
-              isSelected={selectedId === record.id}
-              onSelect={() => setSelectedId(selectedId === record.id ? null : record.id)}
-              deviceMap={deviceMap}
-            />
-            {isAdmin && selectedId === record.id && (
-              <EditAttendanceForm
-                key={`edit-${record.id}`}
+    <>
+      <div className="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style={{ cursor: 'pointer' }} onClick={() => handleSort('timestamp')}>
+                Datum{arrow('timestamp')}
+              </th>
+              <th style={{ cursor: 'pointer' }} onClick={() => handleSort('direction')}>
+                Sm&#283;r{arrow('direction')}
+              </th>
+              <th style={{ cursor: 'pointer' }} onClick={() => handleSort('fullName')}>
+                Zam&#283;stnanec{arrow('fullName')}
+              </th>
+              <th style={{ cursor: 'pointer' }} onClick={() => handleSort('device')}>
+                Za&#345;&#237;zen&#237;{arrow('device')}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map(record => (
+              <AttendanceRecordItem
+                key={record.id}
                 record={record}
-                onClose={() => setSelectedId(null)}
-                onUpdated={onUpdated}
+                isSelected={selectedId === record.id}
+                onSelect={() => isAdmin && setSelectedId(selectedId === record.id ? null : record.id)}
                 deviceMap={deviceMap}
               />
-            )}
-          </>
-        ))}
-      </tbody>
-    </table>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {selectedRecord && (
+        <EditAttendanceForm
+          record={selectedRecord}
+          onClose={() => setSelectedId(null)}
+          onUpdated={onUpdated}
+          deviceMap={deviceMap}
+        />
+      )}
+    </>
   )
 }
 

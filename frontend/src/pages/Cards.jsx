@@ -1,3 +1,5 @@
+import Spinner from '../components/Spinner'
+import Modal from '../components/Modal'
 import { useState, useEffect } from 'react'
 import { getAllCards, getUsers, updateCard, deleteCard } from '../api'
 
@@ -38,28 +40,30 @@ function EditCardForm({ card, users, onClose, onUpdated }) {
   }
 
   return (
-    <tr className="edit-row">
-      <td colSpan={4}>
-        <form className="edit-form" onSubmit={handleSave}>
+    <Modal onClose={onClose}>
+      <h2 style={{ marginTop: 0 }}>Upravit kartu</h2>
+      <form className="create-form" onSubmit={handleSave}>
+        <label>
+          Zam&#283;stnanec
           <select value={userId} onChange={e => setUserId(e.target.value)}>
-            <option value="">— bez zaměstnance —</option>
+            <option value="">&#8212; bez zam&#283;stnance &#8212;</option>
             {users.map(u => (
               <option key={u.id} value={u.id}>{u.name} {u.surname}</option>
             ))}
           </select>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} />
-            Aktivní
-          </label>
-          <div className="edit-form-actions">
-            <button type="submit" className="btn-save" disabled={loading}>Uložit</button>
-            <button type="button" className="btn-delete" onClick={handleDelete} disabled={loading}>Smazat</button>
-            <button type="button" className="btn-cancel" onClick={onClose}>Zrušit</button>
-          </div>
-        </form>
-        {error && <p className="edit-message" style={{ color: 'red' }}>{error}</p>}
-      </td>
-    </tr>
+        </label>
+        <label className="checkbox-label">
+          <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} />
+          Aktivn&#237;
+        </label>
+        {error && <p style={{ color: 'red', margin: 0 }}>{error}</p>}
+        <div className="edit-form-actions">
+          <button type="submit" className="btn-save" disabled={loading}>Ulo&#382;it</button>
+          <button type="button" className="btn-delete" onClick={handleDelete} disabled={loading}>Smazat</button>
+          <button type="button" className="btn-cancel" onClick={onClose}>Zru&#353;it</button>
+        </div>
+      </form>
+    </Modal>
   )
 }
 
@@ -93,68 +97,72 @@ function Cards() {
     )
   })
 
-  if (loading) return <p>Načítám...</p>
+  if (loading) return <Spinner />
   if (error) return <p>Chyba: {error}</p>
+
+  const selectedCard = filtered.find(c => c.id === selectedId)
 
   return (
     <section className="page-content">
 
-      <h2>Vyhledávání</h2>
+      <h2>Vyhled&#225;v&#225;n&#237;</h2>
       <div className="filter-card">
         <label>
-          Karta nebo zaměstnanec
+          Karta nebo zam&#283;stnanec
           <input
-            placeholder="Hledat podle UID nebo jména..."
+            placeholder="Hledat podle UID nebo jm&#233;na..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </label>
       </div>
 
-      <div className="attendance-block">
+      <div className="widget-card">
         <div className="block-header">
           <h2>Seznam karet</h2>
         </div>
         {filtered.length === 0 ? (
-          <p>Žádné karty nenalezeny.</p>
+          <p>&#381;&#225;dn&#233; karty nenalezeny.</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>UID karty</th>
-                <th>Zaměstnanec</th>
-                <th>Aktivní</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(card => (
-                <>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>UID karty</th>
+                  <th>Zam&#283;stnanec</th>
+                  <th>Aktivn&#237;</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(card => (
                   <tr
                     key={card.id}
-                    style={{ cursor: 'pointer', background: selectedId === card.id ? '#f1f5f9' : '' }}
+                    style={{ cursor: 'pointer', background: selectedId === card.id ? '#e0e7ff' : '' }}
                     onClick={() => setSelectedId(selectedId === card.id ? null : card.id)}
                   >
                     <td>{card.card_uid}</td>
                     <td>{userMap[card.user_id] || '—'}</td>
-                    <td>{card.is_active ? 'Ano' : 'Ne'}</td>
-                    <td></td>
+                    <td>
+                      <span className={`badge ${card.is_active ? 'badge-green' : 'badge-gray'}`}>
+                        {card.is_active ? 'Ano' : 'Ne'}
+                      </span>
+                    </td>
                   </tr>
-                  {selectedId === card.id && (
-                    <EditCardForm
-                      key={`edit-${card.id}`}
-                      card={card}
-                      users={users}
-                      onClose={() => setSelectedId(null)}
-                      onUpdated={() => setRefreshKey(k => k + 1)}
-                    />
-                  )}
-                </>
-              ))}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
+
+      {selectedCard && (
+        <EditCardForm
+          card={selectedCard}
+          users={users}
+          onClose={() => setSelectedId(null)}
+          onUpdated={() => { setSelectedId(null); setRefreshKey(k => k + 1) }}
+        />
+      )}
 
     </section>
   )

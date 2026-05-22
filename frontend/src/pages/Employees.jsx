@@ -4,6 +4,7 @@ import { getUsers, getAttendance, getAllCards } from '../api'
 import EmployeesList from '../components/EmployeesList'
 import CreateEmployeeForm from '../components/CreateEmployeeForm'
 import Modal from '../components/Modal'
+import Spinner from '../components/Spinner'
 
 function Employees() {
   const [searchParams] = useSearchParams()
@@ -53,7 +54,7 @@ function Employees() {
     `${emp.name} ${emp.surname}`.toLowerCase().includes(search.toLowerCase())
   )
 
-  if (loading) return <p>Načítám...</p>
+  if (loading) return <Spinner />
   if (error) return <p>Chyba: {error}</p>
 
   return (
@@ -73,7 +74,7 @@ function Employees() {
       </div>
 
       {/* Blok 2 — seznam zaměstnanců */}
-      <div className="attendance-block">
+      <div className="widget-card">
         <div className="block-header">
           <h2>Seznam zaměstnanců</h2>
           <button className="btn-add" title="Nový zaměstnanec"

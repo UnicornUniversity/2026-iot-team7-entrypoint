@@ -28,7 +28,7 @@ function WorkedHoursCard({ records }) {
   const mins = totalMinutes % 60
 
   return (
-    <div className="worked-hours-card">
+    <div className="widget-card">
       <h2>Odpracováno</h2>
       <p>{hours} h {mins} min</p>
     </div>
