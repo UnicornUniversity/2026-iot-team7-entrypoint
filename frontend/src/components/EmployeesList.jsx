@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { updateUser, deleteUser, createCard, updateCard, getAllCards, deleteCard } from '../api'
+import Modal from './Modal'
 
 async function generateCardUid() {
   const cards = await getAllCards()
@@ -33,7 +34,6 @@ function EditEmployeeForm({ employee, cardUid: initialCardUid, onClose, onUpdate
         email,
         isActive,
       })
-      // karta: pokud se změnila nebo přibyla
       if (cardUid && !initialCardUid) {
         await createCard(cardUid, employee.id, true)
       } else if (cardUid && cardUid !== initialCardUid) {
@@ -65,16 +65,26 @@ function EditEmployeeForm({ employee, cardUid: initialCardUid, onClose, onUpdate
   }
 
   return (
-    <tr className="edit-row">
-      <td colSpan={7}>
-        <form className="edit-form" onSubmit={handleSave}>
-          <input placeholder="Jméno" value={name}
-            onChange={e => setName(e.target.value)} />
-          <input placeholder="Příjmení" value={surname}
-            onChange={e => setSurname(e.target.value)} />
-          <input placeholder="Email" value={email}
-            onChange={e => setEmail(e.target.value)} />
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+    <Modal onClose={onClose}>
+      <h2 style={{ marginTop: 0 }}>Upravit zam&#283;stnance</h2>
+      <form className="create-form" onSubmit={handleSave}>
+        <div className="form-row">
+          <label>
+            Jm&#233;no
+            <input value={name} onChange={e => setName(e.target.value)} />
+          </label>
+          <label>
+            P&#345;&#237;jmen&#237;
+            <input value={surname} onChange={e => setSurname(e.target.value)} />
+          </label>
+        </div>
+        <label>
+          Email
+          <input value={email} onChange={e => setEmail(e.target.value)} />
+        </label>
+        <label>
+          UID karty
+          <div style={{ display: 'flex', gap: '8px' }}>
             <input
               placeholder={initialCardUid ? 'UID karty' : 'Bez karty'}
               value={cardUid}
@@ -82,29 +92,28 @@ function EditEmployeeForm({ employee, cardUid: initialCardUid, onClose, onUpdate
               style={{ flex: 1 }}
             />
             {!initialCardUid && (
-              <button type="button" onClick={() => generateCardUid().then(setCardUid)}>
+              <button type="button" className="btn-secondary" onClick={() => generateCardUid().then(setCardUid)}>
                 Vygenerovat
               </button>
             )}
           </div>
-          <label>
-            <input type="checkbox" checked={isActive}
-              onChange={e => setIsActive(e.target.checked)} />
-            Aktivní
-          </label>
-          <div className="edit-form-actions">
-            <button type="submit" className="btn-save" disabled={loading}>Uložit</button>
-            <button type="button" className="btn-delete" onClick={handleDelete} disabled={loading}>Smazat</button>
-            <button type="button" className="btn-cancel" onClick={onClose}>Zrušit</button>
-          </div>
-        </form>
-        {error && <p className="edit-message" style={{ color: 'red' }}>{error}</p>}
-      </td>
-    </tr>
+        </label>
+        <label className="checkbox-label">
+          <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} />
+          Aktivn&#237;
+        </label>
+        {error && <p style={{ color: 'red', margin: 0 }}>{error}</p>}
+        <div className="edit-form-actions">
+          <button type="submit" className="btn-save" disabled={loading}>Ulo&#382;it</button>
+          <button type="button" className="btn-delete" onClick={handleDelete} disabled={loading}>Smazat</button>
+          <button type="button" className="btn-cancel" onClick={onClose}>Zru&#353;it</button>
+        </div>
+      </form>
+    </Modal>
   )
 }
 
-function EmployeeItem({ employee, status, isSelected, onSelect, cardUid }) {
+function EmployeeItem({ employee, isSelected, onSelect, cardUid }) {
   const navigate = useNavigate()
 
   const handleAttendanceClick = (e) => {
@@ -114,16 +123,19 @@ function EmployeeItem({ employee, status, isSelected, onSelect, cardUid }) {
   }
 
   return (
-    <tr style={{ cursor: 'pointer', background: isSelected ? '#f1f5f9' : '' }}
-      onClick={onSelect}>
+    <tr style={{ cursor: 'pointer', background: isSelected ? '#e0e7ff' : '' }} onClick={onSelect}>
       <td>{employee.name}</td>
       <td>{employee.surname}</td>
       <td>{employee.email || '—'}</td>
       <td>{cardUid || '—'}</td>
-      <td>{employee.is_active ? 'Ano' : 'Ne'}</td>
       <td>
-        <button className="btn-link" title="Zobrazit docházku" onClick={handleAttendanceClick}>
-          →
+        <span className={`badge ${employee.is_active ? 'badge-green' : 'badge-gray'}`}>
+          {employee.is_active ? 'Ano' : 'Ne'}
+        </span>
+      </td>
+      <td>
+        <button className="btn-link" title="Zobrazit doch&#225;zku" onClick={handleAttendanceClick}>
+          &#8594;
         </button>
       </td>
     </tr>
@@ -152,58 +164,51 @@ function EmployeesList({ employees, statusMap, cardMap = {}, onUpdated }) {
     else if (sortKey === 'surname') { valA = a.surname || ''; valB = b.surname || '' }
     else if (sortKey === 'email') { valA = a.email || ''; valB = b.email || '' }
     else if (sortKey === 'is_active') { valA = a.is_active ? 1 : 0; valB = b.is_active ? 1 : 0 }
-    else if (sortKey === 'status') { valA = statusMap[a.id] || '—'; valB = statusMap[b.id] || '—' }
+    else if (sortKey === 'status') { valA = statusMap[a.id] || ''; valB = statusMap[b.id] || '' }
     if (valA < valB) return sortDir === 'asc' ? -1 : 1
     if (valA > valB) return sortDir === 'asc' ? 1 : -1
     return 0
   })
 
-  if (sorted.length === 0) return <p>Žádní zaměstnanci nenalezeni.</p>
+  if (sorted.length === 0) return <p>&#381;&#225;dn&#237; zam&#283;stnanci nenalezeni.</p>
+
+  const selectedEmp = sorted.find(e => e.id === selectedId)
 
   return (
-    <table>
-      <thead>
-        <tr>
-          <th style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>
-            Jméno{arrow('name')}
-          </th>
-          <th style={{ cursor: 'pointer' }} onClick={() => handleSort('surname')}>
-            Příjmení{arrow('surname')}
-          </th>
-          <th style={{ cursor: 'pointer' }} onClick={() => handleSort('email')}>
-            Email{arrow('email')}
-          </th>
-          <th>Karta</th>
-          <th style={{ cursor: 'pointer' }} onClick={() => handleSort('is_active')}>
-            Aktivní{arrow('is_active')}
-          </th>
-          <th>Docházka</th>
-        </tr>
-      </thead>
-      <tbody>
-        {sorted.map(emp => (
-          <>
-            <EmployeeItem
-              key={emp.id}
-              employee={emp}
-              status={statusMap[emp.id] || '—'}
-              isSelected={selectedId === emp.id}
-              onSelect={() => setSelectedId(selectedId === emp.id ? null : emp.id)}
-              cardUid={cardMap[emp.id]}
-            />
-            {selectedId === emp.id && (
-              <EditEmployeeForm
-                key={`edit-${emp.id}`}
+    <>
+      <table>
+          <thead>
+            <tr>
+              <th style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>Jm&#233;no{arrow('name')}</th>
+              <th style={{ cursor: 'pointer' }} onClick={() => handleSort('surname')}>P&#345;&#237;jmen&#237;{arrow('surname')}</th>
+              <th style={{ cursor: 'pointer' }} onClick={() => handleSort('email')}>Email{arrow('email')}</th>
+              <th>Karta</th>
+              <th style={{ cursor: 'pointer' }} onClick={() => handleSort('is_active')}>Aktivn&#237;{arrow('is_active')}</th>
+              <th>Doch&#225;zka</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map(emp => (
+              <EmployeeItem
+                key={emp.id}
                 employee={emp}
+                status={statusMap[emp.id] || ''}
+                isSelected={selectedId === emp.id}
+                onSelect={() => setSelectedId(selectedId === emp.id ? null : emp.id)}
                 cardUid={cardMap[emp.id]}
-                onClose={() => setSelectedId(null)}
-                onUpdated={onUpdated}
               />
-            )}
-          </>
-        ))}
-      </tbody>
-    </table>
+            ))}
+          </tbody>
+        </table>
+      {selectedEmp && (
+        <EditEmployeeForm
+          employee={selectedEmp}
+          cardUid={cardMap[selectedEmp.id]}
+          onClose={() => setSelectedId(null)}
+          onUpdated={onUpdated}
+        />
+      )}
+    </>
   )
 }
 

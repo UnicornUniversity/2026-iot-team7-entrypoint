@@ -1,3 +1,8 @@
+:root {
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+}
+
 .app-shell {
   min-height: 100vh;
   display: flex;
@@ -15,6 +20,9 @@
   padding: 20px 24px;
   background: #0f172a;
   color: #f8fafc;
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
 .app-brand {
@@ -29,20 +37,52 @@
   margin-left: auto;
 }
 
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(226, 232, 240, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.15);
+  border-radius: 10px;
+  padding: 5px 10px 5px 5px;
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+
+.user-name {
+  font-size: 0.88rem;
+  color: #e2e8f0;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .btn-logout {
   background: none;
-  border: 1px solid rgba(226, 232, 240, 0.25);
-  border-radius: 8px;
-  color: #e2e8f0;
+  border: none;
+  border-left: 1px solid rgba(226, 232, 240, 0.2);
+  color: #94a3b8;
   cursor: pointer;
-  font-size: 1.1rem;
-  padding: 6px 10px;
+  font-size: 1rem;
+  padding: 2px 0 2px 10px;
   line-height: 1;
-  transition: background 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .btn-logout:hover {
-  background: rgba(226, 232, 240, 0.15);
+  color: #f8fafc;
 }
 
 .app-nav a {
@@ -59,7 +99,7 @@
 }
 
 .app-nav a.active {
-  background: rgba(226, 232, 240, 0.35);
+  background: var(--accent);
   font-weight: 600;
 }
 
@@ -247,7 +287,7 @@
   height: 34px;
   border: none;
   border-radius: 8px;
-  background: #0f172a;
+  background: var(--accent);
   color: #f8fafc;
   font-size: 1.3rem;
   cursor: pointer;
@@ -257,13 +297,28 @@
 }
 
 .btn-add:hover {
-  background: #1e293b;
+  background: var(--accent-hover);
 }
 
 .attendance-block {
   margin-top: 24px;
   padding-top: 24px;
   border-top: 1px solid #e2e8f0;
+}
+
+.widget-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.07);
+  padding: 24px 28px;
+  border: 1px solid #e2e8f0;
+  margin-top: 16px;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.widget-card:hover {
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.13);
+  border-color: #c7d2fe;
 }
 
 .evidence-empty {
@@ -303,9 +358,13 @@
   padding: 7px 14px;
   border: none;
   border-radius: 8px;
-  background: #0f172a;
+  background: var(--accent);
   color: #f8fafc;
   cursor: pointer;
+}
+
+.btn-save:hover {
+  background: var(--accent-hover);
 }
 
 .btn-delete {
@@ -315,6 +374,11 @@
   background: #ef4444;
   color: #fff;
   cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-delete:hover {
+  background: #dc2626;
 }
 
 .btn-cancel {
@@ -323,6 +387,29 @@
   border-radius: 8px;
   background: #fff;
   cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-cancel:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.btn-secondary {
+  padding: 9px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  cursor: pointer;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
 }
 
 .edit-message {
@@ -345,6 +432,120 @@ th, td {
 th {
   font-weight: 600;
   color: #475569;
+  background: #f8fafc;
+}
+
+tbody tr:hover {
+  background: #f1f5f9;
+}
+
+.table-scroll {
+  overflow-y: auto;
+  max-height: 280px;
+  border-radius: 8px;
+  scrollbar-width: none;
+}
+
+.table-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.table-scroll:hover {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.table-scroll:hover::-webkit-scrollbar {
+  display: block;
+  width: 4px;
+}
+
+.table-scroll:hover::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.table-scroll:hover::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8fafc;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-green {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.badge-red {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.badge-gray {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.badge-blue {
+  background: #e0e7ff;
+  color: #4f46e5;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 40px auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.login-page {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f6f7fb;
+}
+
+.login-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.1);
+  padding: 40px 40px 36px;
+  width: min(420px, calc(100% - 32px));
+}
+
+.login-card h1 {
+  font-size: 1.6rem;
+  margin: 0 0 6px;
+  color: #0f172a;
+}
+
+.login-card p {
+  color: #64748b;
+  margin: 0 0 28px;
+  font-size: 0.95rem;
 }
 
 .app-main {
@@ -411,7 +612,8 @@ th {
 }
 
 .login-form {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
   max-width: 400px;
 }
@@ -420,6 +622,7 @@ th {
   display: grid;
   gap: 8px;
   font-weight: 600;
+  text-align: left;
 }
 
 .login-form input {
@@ -432,12 +635,20 @@ th {
 
 .login-form button {
   width: fit-content;
-  padding: 10px 16px;
+  align-self: flex-end;
+  padding: 8px 20px;
   border: none;
   border-radius: 10px;
-  background: #0f172a;
+  background: var(--accent);
   color: #f8fafc;
   cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.login-form button:hover {
+  background: var(--accent-hover);
 }
 
 .app-footer {

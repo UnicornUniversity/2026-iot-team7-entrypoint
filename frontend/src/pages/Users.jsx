@@ -1,43 +1,53 @@
 import { useState, useEffect } from 'react'
 import { getUsers } from '../api'
+import Spinner from '../components/Spinner'
 
 function Users() {
-  const [users, setUsers] = useState([])       // seznam uživatelů
-  const [loading, setLoading] = useState(true) // probíhá načítání?
-  const [error, setError] = useState(null)     // chybová zpráva
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    // spustí se při otevření stránky
     getUsers()
       .then(data => setUsers(data))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <p>Načítám...</p>
+  if (loading) return <Spinner />
   if (error) return <p>Chyba: {error}</p>
 
   return (
     <section className="page-content">
-      <h1>Uživatelé</h1>
-      <table>
-        <thead>
-          <tr>
-            <th>Jméno</th>
-            <th>Příjmení</th>
-            <th>Aktivní</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map(user => (
-            <tr key={user.id}>
-              <td>{user.name}</td>
-              <td>{user.surname}</td>
-              <td>{user.is_active ? 'Ano' : 'Ne'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="widget-card">
+        <div className="block-header">
+          <h2>U&#382;ivatel&#233;</h2>
+        </div>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Jm&#233;no</th>
+                <th>P&#345;&#237;jmen&#237;</th>
+                <th>Aktivn&#237;</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id}>
+                  <td>{u.name}</td>
+                  <td>{u.surname}</td>
+                  <td>
+                    <span className={`badge ${u.is_active ? 'badge-green' : 'badge-gray'}`}>
+                      {u.is_active ? 'Ano' : 'Ne'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
   )
 }
