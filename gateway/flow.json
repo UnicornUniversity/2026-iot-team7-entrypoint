@@ -198,7 +198,7 @@
         "type": "function",
         "z": "tab1",
         "name": "Prepare / Check Empty",
-        "func": "if (!msg.payload || msg.payload.length === 0) {\n    return [null, { type: \"queue_empty\" }];\n}\n\nlet events = msg.payload;\nmsg.event_ids = events.map(e => e.id);\n\nmsg.payload = {\n    \"deviceId\": global.get(\"gateway_key\"),\n    \"events\": events.map(e => ({\n        \"cardUid\": e.uid,\n        \"direction\": (e.event === \"arrival\" || e.event === \"in\") ? \"in\" : \"out\",\n        \"timestamp\": e.timestamp\n    }))\n};\n\nmsg.url = global.get(\"server_host\") + global.get(\"batch_path\");\nmsg.requestTimeout = 5000;\n\nlet token = global.get(\"accessToken\");\nmsg.headers = {\n    \"Authorization\": \"Bearer \" + token,\n    \"Content-Type\": \"application/json\"\n};\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: \"Syncing \" + events.length + \" events\" });\nreturn [msg, null];",
+        "func": "if (!msg.payload || msg.payload.length === 0) {\n    return [null, { type: \"queue_empty\" }];\n}\n\nlet events = msg.payload;\nmsg.event_ids = events.map(e => e.id);\n\nmsg.payload = {\n    \"deviceUid\": global.get(\"gateway_key\"),\n    \"events\": events.map(e => ({\n        \"cardUid\": e.uid,\n        \"direction\": (e.event === \"arrival\" || e.event === \"in\") ? \"in\" : \"out\",\n        \"timestamp\": e.timestamp\n    }))\n};\n\nmsg.url = global.get(\"server_host\") + global.get(\"batch_path\");\nmsg.requestTimeout = 5000;\n\nlet token = global.get(\"accessToken\");\nmsg.headers = {\n    \"Authorization\": \"Bearer \" + token,\n    \"Content-Type\": \"application/json\"\n};\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: \"Syncing \" + events.length + \" events\" });\nreturn [msg, null];",
         "outputs": 2,
         "timeout": "",
         "noerr": 0,
@@ -366,6 +366,7 @@
         "name": "Update SRV Status",
         "func": "let lastStatus = global.get(\"server_online\");\nlet currentStatus = (msg.statusCode === 200);\n\nglobal.set(\"server_online\", currentStatus);\n\nif (currentStatus) {\n    node.status({fill:\"green\", shape:\"dot\", text:\"Server Online\"});\n    let out = [{ type: \"hb_success\" }, { type: \"sync_success\" }];\n    if (lastStatus === false) out.push({ payload: \"PUSH_STATUS\" });\n    return out;\n} else {\n    node.status({fill:\"red\", shape:\"dot\", text:\"Server Offline\"});\n    let out = [{ type: \"hb_fail\" }, null];\n    if (lastStatus === true) out.push({ payload: \"PUSH_STATUS\" });\n    return out;\n}",
         "outputs": 3,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
@@ -436,7 +437,7 @@
         "type": "function",
         "z": "tab1",
         "name": "Filter & Enrich",
-        "func": "if (msg.payload.type === \"system\") {\n    return [null, { payload: \"HB_TRIGGER\" }];\n}\n\nif (msg.payload.type === \"attendance\") {\n    msg.saved_uid = msg.payload.uid;\n    msg.saved_event = (msg.payload.event === \"arrival\") ? \"in\" : \"out\";\n    msg.saved_timestamp = new Date().toISOString();\n\n    msg.payload = {\n        \"cardUid\": msg.saved_uid,\n        \"deviceId\": global.get(\"gateway_key\"),\n        \"direction\": msg.saved_event,\n        \"timestamp\": msg.saved_timestamp\n    };\n\n    msg.url = global.get(\"server_host\") + global.get(\"attendance_path\");\n    msg.requestTimeout = 5000;\n\n    let token = global.get(\"accessToken\");\n    msg.headers = {\n        \"Authorization\": \"Bearer \" + token,\n        \"Content-Type\": \"application/json\"\n    };\n    let logMessage = \"=== LIVE SCANNED PAYLOAD SENT TO SERVER ===\\n\" + JSON.stringify(msg.payload, null, 2);\n\n    node.log(logMessage);\n\n    return [msg, null];\n}\nreturn null;",
+        "func": "if (msg.payload.type === \"system\") {\n    return [null, { payload: \"HB_TRIGGER\" }];\n}\n\nif (msg.payload.type === \"attendance\") {\n    msg.saved_uid = msg.payload.uid;\n    msg.saved_event = (msg.payload.event === \"arrival\") ? \"in\" : \"out\";\n    msg.saved_timestamp = new Date().toISOString();\n\n    msg.payload = {\n        \"cardUid\": msg.saved_uid,\n        \"deviceUid\": global.get(\"gateway_key\"),\n        \"direction\": msg.saved_event,\n        \"timestamp\": msg.saved_timestamp\n    };\n\n    msg.url = global.get(\"server_host\") + global.get(\"attendance_path\");\n    msg.requestTimeout = 5000;\n\n    let token = global.get(\"accessToken\");\n    msg.headers = {\n        \"Authorization\": \"Bearer \" + token,\n        \"Content-Type\": \"application/json\"\n    };\n    let logMessage = \"=== LIVE SCANNED PAYLOAD SENT TO SERVER ===\\n\" + JSON.stringify(msg.payload, null, 2);\n\n    node.log(logMessage);\n\n    return [msg, null];\n}\nreturn null;",
         "outputs": 2,
         "timeout": "",
         "noerr": 0,
@@ -959,7 +960,7 @@
         "addchar": ""
     },
     {
-        "id": "c777a82bd31c1d08",
+        "id": "d8a3d3ef4b3eef28",
         "type": "global-config",
         "env": [],
         "modules": {

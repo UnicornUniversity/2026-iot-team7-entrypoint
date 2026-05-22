@@ -54,11 +54,18 @@ export class AttendanceController {
     @ApiResponse({
         status: 201,
         example: {
-            id: '550e8400-e29b-41d4-a716-446655440040',
-            user_id: '550e8400-e29b-41d4-a716-446655440001',
-            device_id: '550e8400-e29b-41d4-a716-446655440010',
-            direction: 'in',
+            id: 'fc3638ec-a79f-40a8-a4c8-af27945c89d4',
+            user_id: 'fed9b851-0cac-4031-9136-e49ed8a3d20f',
+            timestamp: '2026-05-17T07:23:12+00:00',
             success: true,
+            direction: 'in',
+            device_id: '268de211-2e35-41d3-a297-1bc61ce92da6',
+            updated_at: null,
+            updated_by: null,
+            created_at: '2026-05-22T17:10:43.505865+00:00',
+            name: 'Karel',
+            surname: 'Novak',
+            username: 'karel.novak',
         },
     })
     @Post()
