@@ -5,8 +5,8 @@ export class CreateAccessLogDto {
     @ApiProperty({ example: '04A1B2C3D4' })
     cardUid: string;
 
-    @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440010' })
-    deviceId: string;
+    @ApiProperty({ example: 'SN3221409A' })
+    deviceUid: string;
 
     @ApiProperty({ enum: Direction, example: Direction.IN })
     direction: Direction;
