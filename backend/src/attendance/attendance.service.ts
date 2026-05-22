@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableException} from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateAccessLogDto } from './dto/createAccessLog.dto';
 import { UpdateAccessLogDto } from './dto/updateAccessLog.dto';
@@ -39,6 +39,21 @@ export class AttendanceService {
             .eq('card_uid', dto.cardUid)
             .eq('is_active', true)
             .single();
+        const { data: device, error: deviceError } = await this.supabase
+            .getClient()
+            .from('devices')
+            .select('*')
+            .eq('device_uid', dto.deviceUid)
+            .single();
+        
+        if (deviceError || !device) {
+            if (deviceError?.code === 'PGRST116')
+                throw new NotFoundException('Gateway was not found or was not registered yet');
+            throw deviceError;
+        }
+
+        if (device?.status != 'online')
+            throw new ServiceUnavailableException('Device is not online');
 
         if (cardError || !card) {
             await this.supabase
@@ -47,7 +62,7 @@ export class AttendanceService {
                 .insert([
                     {
                         user_id: null,
-                        device_id: dto.deviceId,
+                        device_id: device.id,
                         ...(dto.timestamp !== undefined ? { timestamp: dto.timestamp } : {}),
                         direction: dto.direction,
                         success: false,
@@ -62,7 +77,7 @@ export class AttendanceService {
             .insert([
                 {
                     user_id: card.user_id,
-                    device_id: dto.deviceId,
+                    device_id: device.id,
                     ...(dto.timestamp !== undefined ? { timestamp: dto.timestamp } : {}),
                     direction: dto.direction,
                     success: true,
