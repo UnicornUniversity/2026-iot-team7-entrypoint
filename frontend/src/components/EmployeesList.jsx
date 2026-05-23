@@ -84,19 +84,11 @@ function EditEmployeeForm({ employee, cardUid: initialCardUid, onClose, onUpdate
         </label>
         <label>
           UID karty
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              placeholder={initialCardUid ? 'UID karty' : 'Bez karty'}
-              value={cardUid}
-              onChange={e => setCardUid(e.target.value.toUpperCase())}
-              style={{ flex: 1 }}
-            />
-            {!initialCardUid && (
-              <button type="button" className="btn-secondary" onClick={() => generateCardUid().then(setCardUid)}>
-                Vygenerovat
-              </button>
-            )}
-          </div>
+          <input
+            placeholder={initialCardUid ? 'UID karty' : 'Bez karty'}
+            value={cardUid}
+            onChange={e => setCardUid(e.target.value.toUpperCase())}
+          />
         </label>
         <label className="checkbox-label">
           <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} />

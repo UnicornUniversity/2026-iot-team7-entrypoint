@@ -89,17 +89,11 @@ function CreateEmployeeForm({ onClose, onCreated }) {
         </div>
         <label>
           UID karty
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              placeholder="Nepovinné — nebo vygeneruj"
-              value={cardUid}
-              onChange={e => setCardUid(e.target.value.toUpperCase())}
-              style={{ flex: 1 }}
-            />
-            <button type="button" className="btn-secondary" onClick={() => generateCardUid().then(setCardUid)}>
-              Vygenerovat
-            </button>
-          </div>
+          <input
+            placeholder="Nepovinné"
+            value={cardUid}
+            onChange={e => setCardUid(e.target.value.toUpperCase())}
+          />
         </label>
         <div className="form-row" style={{ alignItems: 'center' }}>
           <label>
