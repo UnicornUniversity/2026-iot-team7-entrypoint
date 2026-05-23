@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { getAttendance, getUserAttendance, getUsers, getDevices, getAllCards } from '../api'
 import { useAuth } from '../context/AuthContext'
@@ -103,7 +103,7 @@ function Attendance() {
       <div className="widget-card">
         <div className="block-header">
           <h2>Průchody terminálem</h2>
-          {isAdmin && <AddAttendanceButton onAdded={fetchRecords} devices={devices} employees={employees} cardMap={cardMap} />}
+          {isAdmin && <AddAttendanceButton onAdded={fetchRecords} devices={devices} employees={employees} cardMap={cardMap} defaultUserId={filters.userId} />}
         </div>
         <AttendanceList records={filtered} isAdmin={isAdmin} deviceMap={deviceMap} onUpdated={fetchRecords} />
       </div>
