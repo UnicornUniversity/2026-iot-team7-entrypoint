@@ -198,7 +198,7 @@
         "type": "function",
         "z": "tab1",
         "name": "Prepare / Check Empty",
-        "func": "if (!msg.payload || msg.payload.length === 0) {\n    return [null, { type: \"queue_empty\" }];\n}\n\nlet events = msg.payload;\n\nmsg.event_ids = events.map(e => e.id);\n\nmsg.payload = {\n    \"deviceUid\": global.get(\"gateway_key\"),\n    \"events\": events.map(e => ({\n        \"cardUid\": e.uid,\n        \"event\": (e.event === \"arrival\" || e.event === \"in\") ? \"in\" : \"out\",\n        \"timestamp\": e.timestamp\n    }))\n};\n\nmsg.url = global.get(\"server_host\") + global.get(\"batch_path\");\nmsg.requestTimeout = 5000;\n\nlet token = global.get(\"accessToken\");\nmsg.headers = {\n    \"Authorization\": \"Bearer \" + token,\n    \"Content-Type\": \"application/json\"\n};\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: \"Syncing \" + events.length + \" events\" });\nreturn [msg, null];",
+        "func": "if (!msg.payload || msg.payload.length === 0) {\n    return [null, { type: \"queue_empty\" }];\n}\n\nlet events = msg.payload;\n\nmsg.event_ids = events.map(e => e.id);\n\nmsg.payload = {\n    \"deviceUid\": global.get(\"gateway_key\"),\n    \"events\": events.map(e => ({\n        \"cardUid\": e.uid,\n        \"event\": (e.event === \"arrival\" || e.event === \"in\") ? \"in\" : \"out\",\n        \"timestamp\": e.timestamp\n    }))\n};\n\nmsg.url = global.get(\"server_host\") + global.get(\"batch_path\");\nmsg.requestTimeout = 5000;\n\nlet token = global.get(\"accessToken\");\nmsg.headers = {\n    \"Authorization\": \"Bearer \" + token,\n    \"Content-Type\": \"application/json\"\n};\nlet logBatch = \"=== BATCH OFFLINE PAYLOAD SENT TO SERVER ===\\n\" + JSON.stringify(msg.payload, null, 2);\n\nnode.log(logBatch);\nnode.status({ fill: \"blue\", shape: \"dot\", text: \"Syncing \" + events.length + \" events\" });\nreturn [msg, null];",
         "outputs": 2,
         "timeout": "",
         "noerr": 0,
@@ -245,8 +245,9 @@
         "type": "function",
         "z": "tab1",
         "name": "Cleanup DB & Loop",
-        "func": "if (msg.statusCode === 200 && msg.payload && msg.payload.status === \"OK\") {\n    let sql = \"DELETE FROM attendance WHERE id IN (\" + msg.event_ids.join(\",\") + \")\";\n    node.status({fill:\"green\", shape:\"dot\", text:\"Batch Synced\"});\n    return [{ topic: sql }, { type: \"sync_success\" }];\n}\n\nnode.status({fill:\"red\", shape:\"ring\", text:\"Sync Failed\"});\nreturn [null, { type: \"sync_fail\" }];",
+        "func": "if (msg.statusCode === 201 && msg.payload && msg.payload.status === \"OK\") {\n    let sql = \"DELETE FROM attendance WHERE id IN (\" + msg.event_ids.join(\",\") + \")\";\n    node.status({fill:\"green\", shape:\"dot\", text:\"Batch Synced\"});\n    return [{ topic: sql }, { type: \"sync_success\" }];\n}\n\nnode.status({fill:\"red\", shape:\"ring\", text:\"Sync Failed\"});\nreturn [null, { type: \"sync_fail\" }];",
         "outputs": 2,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
@@ -656,7 +657,7 @@
         "type": "debug",
         "z": "tab1",
         "name": "To Arduino",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -961,7 +962,7 @@
         "addchar": ""
     },
     {
-        "id": "29daa5b5400850c6",
+        "id": "dc83b5c2e19824c8",
         "type": "global-config",
         "env": [],
         "modules": {
