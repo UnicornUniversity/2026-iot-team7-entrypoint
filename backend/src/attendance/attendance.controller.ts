@@ -1,8 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AttendanceService } from './attendance.service';
+import { BatchSyncDto } from './dto/batchSync.dto';
 import { CreateAccessLogDto } from './dto/createAccessLog.dto';
 import { UpdateAccessLogDto } from './dto/updateAccessLog.dto';
+import type { MtlsOrJwtRequest } from '../mtlsOrJwt.middleware';
 
 @ApiTags('Attendance')
 @ApiBearerAuth()
@@ -71,6 +73,22 @@ export class AttendanceController {
     @Post()
     logAttendance(@Body() dto: CreateAccessLogDto) {
         return this.attendanceService.logAttendance(dto);
+    }
+
+    @ApiOperation({ summary: 'Batch sync offline attendance events' })
+    @ApiBody({ type: BatchSyncDto })
+    @ApiResponse({
+        status: 201,
+        example: {
+            status: 'OK',
+            processed: 1,
+            failed: 1,
+            errors: [{ index: 1, cardUid: 'BAD_UID', reason: 'insert or validation error message' }],
+        },
+    })
+    @Post('batch')
+    batchSync(@Body() dto: BatchSyncDto, @Req() req: MtlsOrJwtRequest) {
+        return this.attendanceService.batchSync(dto, req.deviceId);
     }
 
     @ApiOperation({ summary: 'Update attendance log by ID' })
