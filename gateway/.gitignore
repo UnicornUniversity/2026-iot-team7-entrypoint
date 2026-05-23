@@ -5,3 +5,8 @@ certs/*.pem
 certs/server-key.pem
 certs/client-key.pem
 certs/ca-key.pem
+
+node_modules
+attendance.db
+package-lock.json
+package.json
