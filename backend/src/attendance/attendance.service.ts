@@ -39,13 +39,18 @@ export class AttendanceService {
             .eq('card_uid', dto.cardUid)
             .eq('is_active', true)
             .single();
+
+        if (!dto.deviceUid && !dto.deviceId) {
+            throw new BadRequestException('Request must contain deviceUid, or deviceId');
+        }
+
         const { data: device, error: deviceError } = await this.supabase
             .getClient()
             .from('devices')
             .select('*')
-            .eq('device_uid', dto.deviceUid)
+            .eq(dto.deviceUid ? 'device_uid' : 'id', dto.deviceUid ? dto.deviceUid : dto.deviceId)
             .single();
-        
+
         if (deviceError || !device) {
             if (deviceError?.code === 'PGRST116')
                 throw new NotFoundException('Gateway was not found or was not registered yet');
