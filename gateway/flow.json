@@ -80,7 +80,7 @@
                 "t": "set",
                 "p": "health_path",
                 "pt": "global",
-                "to": "/health",
+                "to": "/api/v1/health",
                 "tot": "str"
             },
             {
@@ -198,7 +198,7 @@
         "type": "function",
         "z": "tab1",
         "name": "Prepare / Check Empty",
-        "func": "if (!msg.payload || msg.payload.length === 0) {\n    return [null, { type: \"queue_empty\" }];\n}\n\nlet events = msg.payload;\nmsg.event_ids = events.map(e => e.id);\n\nmsg.payload = {\n    \"deviceUid\": global.get(\"gateway_key\"),\n    \"events\": events.map(e => ({\n        \"cardUid\": e.uid,\n        \"direction\": (e.event === \"arrival\" || e.event === \"in\") ? \"in\" : \"out\",\n        \"timestamp\": e.timestamp\n    }))\n};\n\nmsg.url = global.get(\"server_host\") + global.get(\"batch_path\");\nmsg.requestTimeout = 5000;\n\nlet token = global.get(\"accessToken\");\nmsg.headers = {\n    \"Authorization\": \"Bearer \" + token,\n    \"Content-Type\": \"application/json\"\n};\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: \"Syncing \" + events.length + \" events\" });\nreturn [msg, null];",
+        "func": "if (!msg.payload || msg.payload.length === 0) {\n    return [null, { type: \"queue_empty\" }];\n}\n\nlet events = msg.payload;\n\nmsg.event_ids = events.map(e => e.id);\n\nmsg.payload = {\n    \"deviceUid\": global.get(\"gateway_key\"),\n    \"events\": events.map(e => ({\n        \"cardUid\": e.uid,\n        \"event\": (e.event === \"arrival\" || e.event === \"in\") ? \"in\" : \"out\",\n        \"timestamp\": e.timestamp\n    }))\n};\n\nmsg.url = global.get(\"server_host\") + global.get(\"batch_path\");\nmsg.requestTimeout = 5000;\n\nlet token = global.get(\"accessToken\");\nmsg.headers = {\n    \"Authorization\": \"Bearer \" + token,\n    \"Content-Type\": \"application/json\"\n};\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: \"Syncing \" + events.length + \" events\" });\nreturn [msg, null];",
         "outputs": 2,
         "timeout": "",
         "noerr": 0,
@@ -355,7 +355,8 @@
         "y": 460,
         "wires": [
             [
-                "node_heartbeat_update"
+                "node_heartbeat_update",
+                "node_debug_from_backend"
             ]
         ]
     },
@@ -960,7 +961,7 @@
         "addchar": ""
     },
     {
-        "id": "582d6203c6796547",
+        "id": "29daa5b5400850c6",
         "type": "global-config",
         "env": [],
         "modules": {
