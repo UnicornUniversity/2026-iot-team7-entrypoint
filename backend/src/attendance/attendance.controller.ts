@@ -4,7 +4,7 @@ import { AttendanceService } from './attendance.service';
 import { BatchSyncDto } from './dto/batchSync.dto';
 import { CreateAccessLogDto } from './dto/createAccessLog.dto';
 import { UpdateAccessLogDto } from './dto/updateAccessLog.dto';
-import type { MtlsOrJwtRequest } from '../mtlsOrJwt.middleware';
+import type { MtlsOrJwtRequest } from '../common/middleware/mtlsOrJwt.middleware';
 
 @ApiTags('Attendance')
 @ApiBearerAuth()
