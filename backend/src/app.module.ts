@@ -9,8 +9,9 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { UsersModule } from './users/users.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { CardsModule } from './cards/cards.module';
-import { MtlsOrJwtMiddleware } from './mtlsOrJwt.middleware';
+import { MtlsOrJwtMiddleware } from './common/middleware/mtlsOrJwt.middleware';
 import { AuthModule } from './auth/auth.module';
+import { LoggingMiddleware } from './common/middleware/logging.middleware';
 
 @Module({
     imports: [
@@ -28,6 +29,15 @@ import { AuthModule } from './auth/auth.module';
 })
 export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {
+        consumer
+            .apply(LoggingMiddleware)
+            .exclude(
+                { path: 'api/v1/auth/login', method: RequestMethod.POST },
+                { path: 'api/v1/auth/refresh', method: RequestMethod.POST },
+                { path: 'api/v1/auth/logout', method: RequestMethod.POST }
+            )
+            .forRoutes('*');
+        
         consumer
             .apply(MtlsOrJwtMiddleware)
             .exclude(
