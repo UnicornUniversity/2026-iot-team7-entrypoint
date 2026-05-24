@@ -1,28 +1,28 @@
 [
     {
-        "id": "tab1",
+        "id": "dd3d6bef40170160",
         "type": "tab",
         "label": "Attendance Gateway",
         "disabled": false,
         "info": ""
     },
     {
-        "id": "node_output_junction",
+        "id": "7c4decd76370c826",
         "type": "junction",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "x": 1350,
-        "y": 640,
+        "y": 540,
         "wires": [
             [
-                "node_serial_out",
-                "node_debug_to_arduino"
+                "edd2b982c55640ad",
+                "2d48f5d3d0d49a67"
             ]
         ]
     },
     {
-        "id": "node_comment_config",
+        "id": "b22221b9a06f3479",
         "type": "comment",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "1. SYSTEM CONFIGURATION",
         "info": "Initializes global variables and SQLite database table.",
         "x": 270,
@@ -30,9 +30,9 @@
         "wires": []
     },
     {
-        "id": "node_config_init",
+        "id": "38918a3de0fd74de",
         "type": "inject",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Init Config",
         "props": [],
         "repeat": "",
@@ -44,15 +44,15 @@
         "y": 80,
         "wires": [
             [
-                "node_set_global_config",
-                "node_db_init_sql"
+                "b4ccb2f20b15012b",
+                "b8265f06b360685a"
             ]
         ]
     },
     {
-        "id": "node_set_global_config",
+        "id": "b4ccb2f20b15012b",
         "type": "change",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Set Gateway Config",
         "rules": [
             {
@@ -80,7 +80,7 @@
                 "t": "set",
                 "p": "health_path",
                 "pt": "global",
-                "to": "/health",
+                "to": "/api/v1/health",
                 "tot": "str"
             },
             {
@@ -138,9 +138,9 @@
         ]
     },
     {
-        "id": "node_db_init_sql",
+        "id": "b8265f06b360685a",
         "type": "change",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "DB Init SQL",
         "rules": [
             {
@@ -160,24 +160,24 @@
         "y": 120,
         "wires": [
             [
-                "node_db_exec"
+                "7d4a10b407ed5863"
             ]
         ]
     },
     {
-        "id": "node_comment_sync",
+        "id": "b75b093a748966e8",
         "type": "comment",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "2. OFFLINE SYNC LOOP",
         "info": "Periodically checks for queued local data and sends to server.",
         "x": 250,
-        "y": 280,
+        "y": 180,
         "wires": []
     },
     {
-        "id": "node_sync_controller",
+        "id": "d13435940f237401",
         "type": "function",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Sync Controller (Backoff)",
         "func": "let interval = context.get('interval') || 10;\nlet timer = context.get('timer');\nlet visualTimer = context.get('visualTimer');\nlet isRunning = context.get('isRunning') || false;\n\nfunction clearTimers() {\n    if (timer) clearTimeout(timer);\n    if (visualTimer) clearInterval(visualTimer);\n}\n\nif (msg.type === \"new_queue\") {\n    if (isRunning) return null;\n    isRunning = true;\n    interval = 10;\n} else if (msg.type === \"sync_success\") {\n    global.set(\"server_online\", true);\n    interval = 10; \n    clearTimers();\n    node.send({ topic: \"SELECT * FROM attendance LIMIT 50\" });\n    context.set('isRunning', true);\n    return null;\n} else if (msg.type === \"sync_fail\") {\n    global.set(\"server_online\", false);\n    interval = Math.min(interval * 2, 300);\n} else if (msg.type === \"queue_empty\") {\n    isRunning = false;\n    clearTimers();\n    context.set('isRunning', false);\n    node.status({fill:\"grey\", shape:\"dot\", text:\"Idle - Queue Empty\"});\n    return null;\n}\n\nclearTimers();\nlet targetTime = Date.now() + (interval * 1000);\n\nvisualTimer = setInterval(() => {\n    let remaining = Math.ceil((targetTime - Date.now()) / 1000);\n    if (remaining >= 0) {\n        node.status({fill:\"blue\", shape:\"ring\", text: \"Next check in \" + remaining + \"s\"});\n    } else {\n        clearInterval(visualTimer);\n    }\n}, 1000);\n\ntimer = setTimeout(() => {\n    node.send({ topic: \"SELECT * FROM attendance LIMIT 50\" });\n}, interval * 1000);\n\ncontext.set('interval', interval);\ncontext.set('timer', timer);\ncontext.set('visualTimer', visualTimer);\ncontext.set('isRunning', isRunning);\nreturn null;",
         "outputs": 1,
@@ -186,19 +186,19 @@
         "finalize": "",
         "libs": [],
         "x": 290,
-        "y": 330,
+        "y": 230,
         "wires": [
             [
-                "node_db_exec_read"
+                "dad328d7e52e55a5"
             ]
         ]
     },
     {
-        "id": "node_prepare_batch",
+        "id": "d934764f4a50e893",
         "type": "function",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Prepare / Check Empty",
-        "func": "if (!msg.payload || msg.payload.length === 0) {\n    return [null, { type: \"queue_empty\" }];\n}\n\nlet events = msg.payload;\nmsg.event_ids = events.map(e => e.id);\n\nmsg.payload = {\n    \"deviceUid\": global.get(\"gateway_key\"),\n    \"events\": events.map(e => ({\n        \"cardUid\": e.uid,\n        \"direction\": (e.event === \"arrival\" || e.event === \"in\") ? \"in\" : \"out\",\n        \"timestamp\": e.timestamp\n    }))\n};\n\nmsg.url = global.get(\"server_host\") + global.get(\"batch_path\");\nmsg.requestTimeout = 5000;\n\nlet token = global.get(\"accessToken\");\nmsg.headers = {\n    \"Authorization\": \"Bearer \" + token,\n    \"Content-Type\": \"application/json\"\n};\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: \"Syncing \" + events.length + \" events\" });\nreturn [msg, null];",
+        "func": "if (!msg.payload || msg.payload.length === 0) {\n    return [null, { type: \"queue_empty\" }];\n}\n\nlet events = msg.payload;\n\nmsg.event_ids = events.map(e => e.id);\n\nmsg.payload = {\n    \"deviceUid\": global.get(\"gateway_key\"),\n    \"events\": events.map(e => ({\n        \"cardUid\": e.uid,\n        \"event\": (e.event === \"arrival\" || e.event === \"in\") ? \"in\" : \"out\",\n        \"timestamp\": e.timestamp\n    }))\n};\n\nmsg.url = global.get(\"server_host\") + global.get(\"batch_path\");\nmsg.requestTimeout = 5000;\n\nlet token = global.get(\"accessToken\");\nmsg.headers = {\n    \"Authorization\": \"Bearer \" + token,\n    \"Content-Type\": \"application/json\"\n};\nlet logBatch = \"=== BATCH OFFLINE PAYLOAD SENT TO SERVER ===\\n\" + JSON.stringify(msg.payload, null, 2);\n\nnode.log(logBatch);\nnode.status({ fill: \"blue\", shape: \"dot\", text: \"Syncing \" + events.length + \" events\" });\nreturn [msg, null];",
         "outputs": 2,
         "timeout": "",
         "noerr": 0,
@@ -206,20 +206,21 @@
         "finalize": "",
         "libs": [],
         "x": 700,
-        "y": 330,
+        "y": 230,
         "wires": [
             [
-                "node_http_batch_post"
+                "a7bf6d9b1d490344",
+                "e9431d5dcea41cdd"
             ],
             [
-                "node_sync_controller"
+                "d13435940f237401"
             ]
         ]
     },
     {
-        "id": "node_http_batch_post",
+        "id": "a7bf6d9b1d490344",
         "type": "http request",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Batch Post",
         "method": "POST",
         "ret": "obj",
@@ -233,49 +234,50 @@
         "senderr": false,
         "headers": [],
         "x": 910,
-        "y": 330,
+        "y": 230,
         "wires": [
             [
-                "node_cleanup_db"
+                "b69f856a2e866827"
             ]
         ]
     },
     {
-        "id": "node_cleanup_db",
+        "id": "b69f856a2e866827",
         "type": "function",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Cleanup DB & Loop",
-        "func": "if (msg.statusCode === 200 && msg.payload && msg.payload.status === \"OK\") {\n    let sql = \"DELETE FROM attendance WHERE id IN (\" + msg.event_ids.join(\",\") + \")\";\n    node.status({fill:\"green\", shape:\"dot\", text:\"Batch Synced\"});\n    return [{ topic: sql }, { type: \"sync_success\" }];\n}\n\nnode.status({fill:\"red\", shape:\"ring\", text:\"Sync Failed\"});\nreturn [null, { type: \"sync_fail\" }];",
+        "func": "if (msg.statusCode === 201 && msg.payload && msg.payload.status === \"OK\") {\n    let sql = \"DELETE FROM attendance WHERE id IN (\" + msg.event_ids.join(\",\") + \")\";\n    node.status({fill:\"green\", shape:\"dot\", text:\"Batch Synced\"});\n    return [{ topic: sql }, { type: \"sync_success\" }];\n}\n\nnode.status({fill:\"red\", shape:\"ring\", text:\"Sync Failed\"});\nreturn [null, { type: \"sync_fail\" }];",
         "outputs": 2,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
         "x": 1110,
-        "y": 330,
+        "y": 230,
         "wires": [
             [
-                "node_db_exec"
+                "7d4a10b407ed5863"
             ],
             [
-                "node_sync_controller"
+                "d13435940f237401"
             ]
         ]
     },
     {
-        "id": "node_comment_heartbeat",
+        "id": "44dc45a3969d76c2",
         "type": "comment",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "3. SERVER HEARTBEAT",
         "info": "Monitors server health with exponential backoff.",
         "x": 250,
-        "y": 420,
+        "y": 320,
         "wires": []
     },
     {
-        "id": "node_heartbeat_inject",
+        "id": "42bb8d25f4c06be9",
         "type": "inject",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Trigger First Heartbeat",
         "props": [
             {
@@ -290,17 +292,17 @@
         "payload": "HB_TRIGGER",
         "payloadType": "str",
         "x": 250,
-        "y": 460,
+        "y": 360,
         "wires": [
             [
-                "node_heartbeat_controller"
+                "3421c9b17407266d"
             ]
         ]
     },
     {
-        "id": "node_heartbeat_controller",
+        "id": "3421c9b17407266d",
         "type": "function",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Heartbeat Controller",
         "func": "let interval = context.get('interval') || 300;\nlet lastStatus = context.get('lastStatus') || \"hb_success\";\nlet timer = context.get('timer');\nlet visualTimer = context.get('visualTimer');\n\nfunction clearAllTimers() {\n    if (timer) clearTimeout(timer);\n    if (visualTimer) clearInterval(visualTimer);\n}\n\nif (msg.payload === \"HB_TRIGGER\" || msg.force === true) {\n    clearAllTimers();\n    node.send({ payload: \"check\" });\n    node.status({fill:\"blue\", shape:\"dot\", text:\"Checking now...\"});\n    return null;\n}\n\nif (msg.type === \"hb_success\") {\n    interval = 300; \n    lastStatus = \"hb_success\";\n} else if (msg.type === \"hb_fail\") {\n    if (lastStatus === \"hb_success\") {\n        interval = 10; \n    } else {\n        interval = Math.min(interval * 2, 300);\n    }\n    lastStatus = \"hb_fail\";\n}\n\nclearAllTimers();\nlet targetTime = Date.now() + (interval * 1000);\nlet statusColor = (interval === 300) ? \"green\" : \"yellow\";\n\nvisualTimer = setInterval(() => {\n    let remaining = Math.ceil((targetTime - Date.now()) / 1000);\n    if (remaining >= 0) {\n        node.status({fill: statusColor, shape:\"ring\", text: \"Next check in \" + remaining + \"s\"});\n    } else {\n        clearInterval(visualTimer);\n    }\n}, 1000);\n\ntimer = setTimeout(() => {\n    node.send({ payload: \"check\" });\n}, interval * 1000);\n\ncontext.set('interval', interval);\ncontext.set('lastStatus', lastStatus);\ncontext.set('timer', timer);\ncontext.set('visualTimer', visualTimer);\nreturn null;",
         "outputs": 1,
@@ -309,17 +311,17 @@
         "finalize": "",
         "libs": [],
         "x": 480,
-        "y": 460,
+        "y": 360,
         "wires": [
             [
-                "node_heartbeat_prep"
+                "761cbf069a028afd"
             ]
         ]
     },
     {
-        "id": "node_heartbeat_prep",
+        "id": "761cbf069a028afd",
         "type": "function",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Prep Heartbeat",
         "func": "msg.url = global.get(\"server_host\") + global.get(\"health_path\");\nmsg.requestTimeout = 5000;\nreturn msg;",
         "outputs": 1,
@@ -328,17 +330,17 @@
         "finalize": "",
         "libs": [],
         "x": 680,
-        "y": 460,
+        "y": 360,
         "wires": [
             [
-                "node_heartbeat_http"
+                "f7f010e39a1a42da"
             ]
         ]
     },
     {
-        "id": "node_heartbeat_http",
+        "id": "f7f010e39a1a42da",
         "type": "http request",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Check Health",
         "method": "GET",
         "ret": "obj",
@@ -352,17 +354,18 @@
         "senderr": false,
         "headers": [],
         "x": 860,
-        "y": 460,
+        "y": 360,
         "wires": [
             [
-                "node_heartbeat_update"
+                "217bc84343cc27c4",
+                "e9431d5dcea41cdd"
             ]
         ]
     },
     {
-        "id": "node_heartbeat_update",
+        "id": "217bc84343cc27c4",
         "type": "function",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Update SRV Status",
         "func": "let lastStatus = global.get(\"server_online\");\nlet currentStatus = (msg.statusCode === 200);\n\nglobal.set(\"server_online\", currentStatus);\n\nif (currentStatus) {\n    node.status({fill:\"green\", shape:\"dot\", text:\"Server Online\"});\n    let out = [{ type: \"hb_success\" }, { type: \"sync_success\" }];\n    if (lastStatus === false) out.push({ payload: \"PUSH_STATUS\" });\n    return out;\n} else {\n    node.status({fill:\"red\", shape:\"dot\", text:\"Server Offline\"});\n    let out = [{ type: \"hb_fail\" }, null];\n    if (lastStatus === true) out.push({ payload: \"PUSH_STATUS\" });\n    return out;\n}",
         "outputs": 3,
@@ -372,33 +375,33 @@
         "finalize": "",
         "libs": [],
         "x": 1070,
-        "y": 460,
+        "y": 360,
         "wires": [
             [
-                "node_heartbeat_controller"
+                "3421c9b17407266d"
             ],
             [
-                "node_sync_controller"
+                "d13435940f237401"
             ],
             [
-                "node_format_time"
+                "a79d9ed7883077f3"
             ]
         ]
     },
     {
-        "id": "node_comment_arduino",
+        "id": "a779dfe081857255",
         "type": "comment",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "4. ARDUINO COMMUNICATION",
         "info": "Handles live scanning traffic and real-time server responses.",
         "x": 270,
-        "y": 540,
+        "y": 440,
         "wires": []
     },
     {
-        "id": "node_safe_json_parse",
+        "id": "3e398a2e6dc47f46",
         "type": "function",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Safe JSON Parse",
         "func": "try {\n    let trimmed = msg.payload.trim();\n    if (trimmed.startsWith('{')) {\n        msg.payload = JSON.parse(trimmed);\n        node.status({fill:\"green\", shape:\"dot\", text:\"JSON OK\"});\n        return msg;\n    }\n} catch (e) {}\n\nnode.status({fill:\"red\", shape:\"dot\", text:\"Invalid Data\"});\nreturn null;",
         "outputs": 1,
@@ -407,20 +410,20 @@
         "finalize": "",
         "libs": [],
         "x": 430,
-        "y": 580,
+        "y": 480,
         "wires": [
             [
-                "node_debug_from_arduino",
-                "node_filter_logic"
+                "de14c0c8043d29c4",
+                "ec954977a3b67687"
             ]
         ]
     },
     {
-        "id": "node_debug_from_arduino",
+        "id": "de14c0c8043d29c4",
         "type": "debug",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "From Arduino",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -429,15 +432,15 @@
         "statusVal": "",
         "statusType": "auto",
         "x": 650,
-        "y": 640,
+        "y": 540,
         "wires": []
     },
     {
-        "id": "node_filter_logic",
+        "id": "ec954977a3b67687",
         "type": "function",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Filter & Enrich",
-        "func": "if (msg.payload.type === \"system\") {\n    return [null, { payload: \"HB_TRIGGER\" }];\n}\n\nif (msg.payload.type === \"attendance\") {\n    msg.saved_uid = msg.payload.uid;\n    msg.saved_event = (msg.payload.event === \"arrival\") ? \"in\" : \"out\";\n    msg.saved_timestamp = new Date().toISOString();\n\n    msg.payload = {\n        \"cardUid\": msg.saved_uid,\n        \"deviceUid\": global.get(\"gateway_key\"),\n        \"direction\": msg.saved_event,\n        \"timestamp\": msg.saved_timestamp\n    };\n\n    msg.url = global.get(\"server_host\") + global.get(\"attendance_path\");\n    msg.requestTimeout = 5000;\n\n    let token = global.get(\"accessToken\");\n    msg.headers = {\n        \"Authorization\": \"Bearer \" + token,\n        \"Content-Type\": \"application/json\"\n    };\n    let logMessage = \"=== LIVE SCANNED PAYLOAD SENT TO SERVER ===\\n\" + JSON.stringify(msg.payload, null, 2);\n\n    node.log(logMessage);\n\n    return [msg, null];\n}\nreturn null;",
+        "func": "if (msg.payload.type === \"system\") {\n    return [null, { payload: \"HB_TRIGGER\" }];\n}\n\nif (msg.payload.type === \"attendance\") {\n    msg.saved_uid = msg.payload.uid;\n    msg.saved_event = (msg.payload.event === \"ARRIVAL\") ? \"in\" : \"out\";\n    msg.saved_timestamp = new Date().toISOString();\n\n    msg.payload = {\n        \"cardUid\": msg.saved_uid,\n        \"deviceUid\": global.get(\"gateway_key\"),\n        \"direction\": msg.saved_event,\n        \"timestamp\": msg.saved_timestamp\n    };\n\n    msg.url = global.get(\"server_host\") + global.get(\"attendance_path\");\n    msg.requestTimeout = 5000;\n\n    // let token = global.get(\"accessToken\");\n    // msg.headers = {\n    //     \"Authorization\": \"Bearer \" + token,\n    //     \"Content-Type\": \"application/json\"\n    // };\n    // let logMessage = \"=== LIVE SCANNED PAYLOAD SENT TO SERVER ===\\n\" + JSON.stringify(msg.payload, null, 2);\n\n    // node.log(logMessage);\n\n    return [msg, null];\n}\nreturn null;",
         "outputs": 2,
         "timeout": "",
         "noerr": 0,
@@ -445,21 +448,23 @@
         "finalize": "",
         "libs": [],
         "x": 650,
-        "y": 580,
+        "y": 480,
         "wires": [
             [
-                "node_http_post"
+                "6831fd6ee2652dab",
+                "acad100e89e24799"
             ],
             [
-                "node_heartbeat_controller",
-                "node_format_time"
+                "3421c9b17407266d",
+                "a79d9ed7883077f3",
+                "acad100e89e24799"
             ]
         ]
     },
     {
-        "id": "node_http_post",
+        "id": "6831fd6ee2652dab",
         "type": "http request",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Server Post",
         "method": "POST",
         "ret": "obj",
@@ -473,70 +478,71 @@
         "senderr": false,
         "headers": [],
         "x": 830,
-        "y": 580,
+        "y": 480,
         "wires": [
             [
-                "node_debug_from_backend",
-                "8b3133e785ee466c"
+                "e9431d5dcea41cdd",
+                "e8a69f98385f7d5b"
             ]
         ]
     },
     {
-        "id": "node_debug_from_backend",
+        "id": "e9431d5dcea41cdd",
         "type": "debug",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "From Backend",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
-        "complete": "payload",
-        "targetType": "msg",
+        "complete": "true",
+        "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
         "x": 1060,
-        "y": 640,
+        "y": 540,
         "wires": []
     },
     {
-        "id": "node_handle_resp",
+        "id": "e8a69f98385f7d5b",
         "type": "function",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Handle Resp / Fail-Fast",
-        "func": "let now = new Date();\nlet hh = now.getHours().toString().padStart(2, '0');\nlet mm = now.getMinutes().toString().padStart(2, '0');\nlet ss = now.getSeconds().toString().padStart(2, '0');\nlet timeStr = hh + \":\" + mm + \":\" + ss;\n\nfunction normalize(str) {\n    if (!str) return \"\";\n    return str.normalize(\"NFD\")\n              .replace(/[\\u0300-\\u036f]/g, \"\")\n              .replace(/\\|/g, \"\")\n              .replace(/[^\\x00-\\x7F]/g, \"\");\n}\n\nif (msg.statusCode === 200 && msg.payload && msg.payload.status === \"OK\") {\n    global.set(\"server_online\", true);\n    let first = normalize(msg.payload.firstName);\n    let last = normalize(msg.payload.lastName);\n    let type = msg.payload.event.toUpperCase();\n    let out = \"OK|\" + type + \"|\" + first + \"|\" + last + \"|\" + timeStr + \"\\n\";\n    return [{ payload: out }, null, { type: \"hb_success\" }];\n}\n\nif (msg.statusCode === 200 && msg.payload && msg.payload.status === \"DENIED\") {\n    global.set(\"server_online\", true);\n    return [{ payload: \"DENIED\\n\" }, null, { type: \"hb_success\" }];\n}\n\nif (msg.statusCode >= 500) {\n    global.set(\"server_online\", true);\n    return [{ payload: \"SERVER_ERROR\\n\" }, null, { type: \"hb_success\" }];\n}\n\nglobal.set(\"server_online\", false);\nlet rawEvent = (msg.saved_event || \"\").toLowerCase();\nlet offlineType = (rawEvent === 'auto') ? 'arrival' : rawEvent;\nlet sql = \"INSERT INTO attendance (uid, event, timestamp) VALUES ('\" + msg.saved_uid + \"', '\" + offlineType + \"', '\" + msg.saved_timestamp + \"')\";\nlet localOut = \"LOCAL_OK|\" + offlineType.toUpperCase() + \"|\" + msg.saved_uid + \"|\" + timeStr + \"\\n\";\nnode.status({fill:\"yellow\", shape:\"ring\", text:\"Offline - Triggering Heartbeat\"});\n\nlet hbTrigger = { force: true };\nreturn [{ payload: localOut }, { topic: sql }, hbTrigger];",
+        "func": "let now = new Date();\nlet hh = now.getHours().toString().padStart(2, '0');\nlet mm = now.getMinutes().toString().padStart(2, '0');\nlet ss = now.getSeconds().toString().padStart(2, '0');\nlet timeStr = hh + \":\" + mm + \":\" + ss;\n\nfunction normalize(str) {\n    if (!str) return \"\";\n    return str.normalize(\"NFD\")\n              .replace(/[\\u0300-\\u036f]/g, \"\")\n              .replace(/\\|/g, \"\")\n              .replace(/[^\\x00-\\x7F]/g, \"\");\n}\n\nif (msg.statusCode === 201 && msg.payload && msg.payload.success) {\n    global.set(\"server_online\", true);\n    let first = normalize(msg.payload.name);\n    let last = normalize(msg.payload.surname);\n    const event = msg.payload.direction === 'in' ? 'ARRIVAL' : 'DEPARTURE';\n    let out = \"OK|\" + event + \"|\" + first + \"|\" + last + \"|\" + timeStr + \"\\n\";\n    return [{ payload: out }, null, { type: \"hb_success\" }];\n}\n\nif (msg.statusCode === 404 && msg.payload && msg.payload.error === \"Not Found\") {\n    global.set(\"server_online\", true);\n    return [{ payload: \"DENIED\\n\" }, null, { type: \"hb_success\" }];\n}\n\nif (msg.statusCode >= 500) {\n    global.set(\"server_online\", true);\n    return [{ payload: \"SERVER_ERROR\\n\" }, null, { type: \"hb_success\" }];\n}\n\nglobal.set(\"server_online\", false);\nlet rawEvent = (msg.saved_event || \"\").toLowerCase();\nlet offlineType = (rawEvent === 'auto') ? 'arrival' : rawEvent;\nlet sql = \"INSERT INTO attendance (uid, event, timestamp) VALUES ('\" + msg.saved_uid + \"', '\" + offlineType + \"', '\" + msg.saved_timestamp + \"')\";\nlet localOut = \"LOCAL_OK|\" + offlineType.toUpperCase() + \"|\" + msg.saved_uid + \"|\" + timeStr + \"\\n\";\nnode.status({fill:\"yellow\", shape:\"ring\", text:\"Offline - Triggering Heartbeat\"});\n\nlet hbTrigger = { force: true };\nreturn [{ payload: localOut }, { topic: sql }, hbTrigger];",
         "outputs": 3,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
         "x": 1250,
-        "y": 580,
+        "y": 480,
         "wires": [
             [
-                "node_output_junction"
+                "7c4decd76370c826"
             ],
             [
-                "node_db_exec"
+                "7d4a10b407ed5863"
             ],
             [
-                "node_heartbeat_controller"
+                "3421c9b17407266d"
             ]
         ]
     },
     {
-        "id": "node_comment_maint",
+        "id": "d6a4aba3501edfaf",
         "type": "comment",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "5. SIMULATION & MAINTENANCE",
         "info": "Tools for testing and system time management.",
         "x": 280,
-        "y": 660,
+        "y": 560,
         "wires": []
     },
     {
-        "id": "node_sim_inject",
+        "id": "b64c5dc5602b3984",
         "type": "inject",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Simulate Scan",
         "props": [
             {
@@ -551,17 +557,17 @@
         "payload": "",
         "payloadType": "date",
         "x": 250,
-        "y": 700,
+        "y": 600,
         "wires": [
             [
-                "node_sim_set_payload"
+                "ac04b29a810a9fe1"
             ]
         ]
     },
     {
-        "id": "node_sim_set_payload",
+        "id": "ac04b29a810a9fe1",
         "type": "change",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Set Sim Data",
         "rules": [
             {
@@ -599,17 +605,17 @@
         "to": "",
         "reg": false,
         "x": 430,
-        "y": 700,
+        "y": 600,
         "wires": [
             [
-                "node_filter_logic"
+                "ec954977a3b67687"
             ]
         ]
     },
     {
-        "id": "node_time_sync_periodic",
+        "id": "248839b97a8ef70f",
         "type": "inject",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Every Minute",
         "props": [
             {
@@ -624,17 +630,17 @@
         "payload": "",
         "payloadType": "date",
         "x": 260,
-        "y": 780,
+        "y": 680,
         "wires": [
             [
-                "node_format_time"
+                "a79d9ed7883077f3"
             ]
         ]
     },
     {
-        "id": "node_format_time",
+        "id": "a79d9ed7883077f3",
         "type": "function",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Format Time Sync",
         "func": "let now = new Date();\nlet hh = now.getHours().toString().padStart(2, '0');\nlet mm = now.getMinutes().toString().padStart(2, '0');\nlet ss = now.getSeconds().toString().padStart(2, '0');\nlet status = global.get(\"server_online\") ? \"ON\" : \"OFF\";\nlet result = \"TIME|\" + hh + \":\" + mm + \":\" + ss + \"|\" + status + \"\\n\";\nreturn { payload: result };",
         "outputs": 1,
@@ -643,19 +649,19 @@
         "finalize": "",
         "libs": [],
         "x": 830,
-        "y": 780,
+        "y": 680,
         "wires": [
             [
-                "node_output_junction"
+                "7c4decd76370c826"
             ]
         ]
     },
     {
-        "id": "node_debug_to_arduino",
+        "id": "2d48f5d3d0d49a67",
         "type": "debug",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "To Arduino",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -663,270 +669,85 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1850,
-        "y": 600,
+        "x": 1610,
+        "y": 500,
         "wires": []
     },
     {
-        "id": "node_db_exec",
+        "id": "7d4a10b407ed5863",
         "type": "sqlite",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "mydb": "sql1",
         "sql": "",
         "name": "Local DB",
-        "x": 1860,
+        "x": 1600,
         "y": 120,
         "wires": [
             []
         ]
     },
     {
-        "id": "node_db_exec_read",
+        "id": "dad328d7e52e55a5",
         "type": "sqlite",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "mydb": "sql1",
         "sql": "",
         "name": "Read Queue",
         "x": 490,
-        "y": 330,
+        "y": 230,
         "wires": [
             [
-                "node_prepare_batch"
+                "d934764f4a50e893"
             ]
         ]
     },
     {
-        "id": "node_serial_in",
+        "id": "b6ec1974841c120b",
         "type": "serial in",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Arduino In",
         "serial": "s1",
         "x": 240,
-        "y": 580,
+        "y": 480,
         "wires": [
             [
-                "node_safe_json_parse"
+                "3e398a2e6dc47f46"
             ]
         ]
     },
     {
-        "id": "node_serial_out",
+        "id": "edd2b982c55640ad",
         "type": "serial out",
-        "z": "tab1",
+        "z": "dd3d6bef40170160",
         "name": "Arduino Out",
         "serial": "s1",
-        "x": 1850,
-        "y": 680,
+        "x": 1610,
+        "y": 580,
         "wires": []
     },
     {
-        "id": "a01bbbc168ae0765",
-        "type": "inject",
-        "z": "tab1",
-        "name": "On Boot",
-        "props": [
-            {
-                "p": "payload"
-            },
-            {
-                "p": "topic",
-                "vt": "str"
-            }
-        ],
-        "repeat": "",
-        "crontab": "",
-        "once": true,
-        "onceDelay": 0.1,
-        "topic": "",
-        "payload": "",
-        "payloadType": "date",
-        "x": 240,
-        "y": 200,
-        "wires": [
-            [
-                "c906ba37f3b1e0e7"
-            ]
-        ]
-    },
-    {
-        "id": "c906ba37f3b1e0e7",
-        "type": "function",
-        "z": "tab1",
-        "name": "Prep login",
-        "func": "msg.url = global.get(\"server_host\") + global.get(\"auth_login_path\");\nmsg.payload = {\n    \"email\": \"admin@admin.cz\",\n    \"password\": \"adminadmin\"\n};\nmsg.force = true;\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 440,
-        "y": 200,
-        "wires": [
-            [
-                "4612d6184764819d"
-            ]
-        ]
-    },
-    {
-        "id": "4612d6184764819d",
-        "type": "http request",
-        "z": "tab1",
-        "name": "Login",
-        "method": "POST",
-        "ret": "obj",
-        "paytoqs": "ignore",
-        "url": "",
-        "tls": "ef751a3fa78a733c",
-        "persist": false,
-        "proxy": "",
-        "insecureHTTPParser": false,
-        "authType": "",
-        "senderr": false,
-        "headers": [],
-        "x": 630,
-        "y": 200,
-        "wires": [
-            [
-                "172723477c924a4d"
-            ]
-        ]
-    },
-    {
-        "id": "172723477c924a4d",
-        "type": "change",
-        "z": "tab1",
-        "name": "Save tokens",
-        "rules": [
-            {
-                "t": "set",
-                "p": "accessToken",
-                "pt": "global",
-                "to": "payload.accessToken",
-                "tot": "msg"
-            },
-            {
-                "t": "set",
-                "p": "refreshToken",
-                "pt": "global",
-                "to": "payload.refreshToken",
-                "tot": "msg"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 850,
-        "y": 200,
-        "wires": [
-            [
-                "node_heartbeat_controller"
-            ]
-        ]
-    },
-    {
-        "id": "8b3133e785ee466c",
-        "type": "switch",
-        "z": "tab1",
-        "name": "401 check",
-        "property": "statusCode",
-        "propertyType": "msg",
-        "rules": [
-            {
-                "t": "eq",
-                "v": "401",
-                "vt": "str"
-            },
-            {
-                "t": "else"
-            }
-        ],
-        "checkall": "true",
-        "repair": false,
-        "outputs": 2,
-        "x": 1030,
-        "y": 580,
-        "wires": [
-            [
-                "71cb0aa882076832"
-            ],
-            [
-                "node_handle_resp"
-            ]
-        ]
-    },
-    {
-        "id": "71cb0aa882076832",
-        "type": "function",
-        "z": "tab1",
-        "name": "Prep reresh",
-        "func": "context.set(\"original_msg\", {\n    url: msg.url,\n    payload: msg.payload,\n    saved_uid: msg.saved_uid,\n    saved_event: msg.saved_event,\n    saved_timestamp: msg.saved_timestamp\n});\n\nmsg.url = global.get(\"server_host\") + global.get(\"auth_refresh_path\");\nmsg.payload = {\n    \"refreshToken\": global.get(\"refreshToken\")\n};\nmsg.headers = {\n    \"Content-Type\": \"application/json\"\n};\n\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 1270,
-        "y": 520,
-        "wires": [
-            [
-                "d93042c8e880435a"
-            ]
-        ]
-    },
-    {
-        "id": "d93042c8e880435a",
-        "type": "http request",
-        "z": "tab1",
-        "name": "Refresh",
-        "method": "POST",
-        "ret": "obj",
-        "paytoqs": "ignore",
-        "url": "",
-        "tls": "ef751a3fa78a733c",
-        "persist": false,
-        "proxy": "",
-        "insecureHTTPParser": false,
-        "authType": "",
-        "senderr": false,
-        "headers": [],
-        "x": 1460,
-        "y": 520,
-        "wires": [
-            [
-                "67b4028bfdf6a760"
-            ]
-        ]
-    },
-    {
-        "id": "67b4028bfdf6a760",
-        "type": "function",
-        "z": "tab1",
-        "name": "Rotate and retry",
-        "func": "if (msg.statusCode === 200 && msg.payload && msg.payload.accessToken) {\n    global.set(\"accessToken\", msg.payload.accessToken);\n    global.set(\"refreshToken\", msg.payload.refreshToken);\n    node.status({ fill: \"green\", shape: \"dot\", text: \"Tokens Rotated\" });\n\n    let original = context.get(\"original_msg\");\n    if (!original) {\n        node.status({ fill: \"red\", shape: \"ring\", text: \"Lost origin context\" });\n        return null;\n    }\n\n    msg.url = original.url;\n    msg.payload = original.payload;\n    msg.saved_uid = original.saved_uid;\n    msg.saved_event = original.saved_event;\n    msg.saved_timestamp = original.saved_timestamp;\n\n    msg.headers = {\n        \"Authorization\": \"Bearer \" + global.get(\"accessToken\"),\n        \"Content-Type\": \"application/json\"\n    };\n\n    return msg;\n} else {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Session completely expired. Relog required.\" });\n    global.set(\"server_online\", false);\n    return null;\n}",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 1660,
-        "y": 520,
-        "wires": [
-            [
-                "node_http_post"
-            ]
-        ]
+        "id": "acad100e89e24799",
+        "type": "debug",
+        "z": "dd3d6bef40170160",
+        "name": "to server",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 920,
+        "y": 600,
+        "wires": []
     },
     {
         "id": "ef751a3fa78a733c",
         "type": "tls-config",
         "name": "mtls",
-        "cert": "",
-        "key": "",
+        "cert": "client-cert.pem",
+        "key": "client-key.pem",
         "ca": "",
         "certname": "client-cert.pem",
         "keyname": "client-key.pem",
@@ -960,7 +781,7 @@
         "addchar": ""
     },
     {
-        "id": "582d6203c6796547",
+        "id": "753866cd6d58432d",
         "type": "global-config",
         "env": [],
         "modules": {
