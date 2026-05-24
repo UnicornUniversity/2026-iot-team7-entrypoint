@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { logAttendance, getUserByCardUid } from '../api'
 import Modal from './Modal'
 
-function AddAttendanceButton({ onAdded, devices = [], employees = [], cardMap = {} }) {
+function AddAttendanceButton({ onAdded, devices = [], employees = [], cardMap = {}, defaultUserId = '' }) {
   const [showForm, setShowForm] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState('')
   const [cardUid, setCardUid] = useState('')
@@ -65,7 +65,16 @@ function AddAttendanceButton({ onAdded, devices = [], employees = [], cardMap = 
 
   return (
     <div>
-      <button className="btn-add" title="Přidat záznam" onClick={() => { setShowForm(true); setTimestamp(nowISO()) }}>
+      <button className="btn-add" title="Přidat záznam" onClick={() => {
+        setShowForm(true)
+        setTimestamp(nowISO())
+        if (defaultUserId) {
+          setSelectedUserId(defaultUserId)
+          const card = cardMap[defaultUserId] || ''
+          setCardUid(card)
+          setCardMissing(!card)
+        }
+      }}>
         +
       </button>
 

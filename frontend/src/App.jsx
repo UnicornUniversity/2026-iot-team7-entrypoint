@@ -15,6 +15,12 @@ function ProtectedRoute({ children, adminOnly = false }) {
   return children
 }
 
+function PublicRoute({ children }) {
+  const { user } = useAuth()
+  if (user) return <Navigate to={user.role === 'admin' ? '/dashboard' : '/attendance'} replace />
+  return children
+}
+
 function AppHeader() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -54,8 +60,8 @@ function AppLayout() {
 
         <main className="app-main">
           <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<PublicRoute><Navigate to="/login" replace /></PublicRoute>} />
+            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute adminOnly><Dashboard /></ProtectedRoute>} />
             <Route path="/employees" element={<ProtectedRoute adminOnly><Employees /></ProtectedRoute>} />
             <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />

@@ -1,7 +1,51 @@
 import Spinner from '../components/Spinner'
 import Modal from '../components/Modal'
 import { useState, useEffect } from 'react'
-import { getAllCards, getUsers, updateCard, deleteCard } from '../api'
+import { getAllCards, getUsers, createCard, updateCard, deleteCard } from '../api'
+
+function AddCardModal({ onClose, onAdded }) {
+  const [cardUid, setCardUid] = useState('')
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+    try {
+      await createCard(cardUid.toUpperCase(), null, true)
+      onAdded()
+      onClose()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal onClose={onClose}>
+      <h2 style={{ marginTop: 0 }}>Přidat kartu</h2>
+      <form className="create-form" onSubmit={handleSubmit}>
+        <label>
+          UID karty
+          <input
+            placeholder="např. A1B2C3D4"
+            value={cardUid}
+            onChange={e => setCardUid(e.target.value.toUpperCase())}
+            required
+            autoFocus
+          />
+        </label>
+        {error && <p style={{ color: 'red', margin: 0 }}>{error}</p>}
+        <div className="edit-form-actions">
+          <button type="submit" className="btn-save" disabled={loading}>Uložit</button>
+          <button type="button" className="btn-cancel" onClick={onClose}>Zrušit</button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
 
 function EditCardForm({ card, users, onClose, onUpdated }) {
   const [userId, setUserId] = useState(card.user_id || '')
@@ -44,9 +88,13 @@ function EditCardForm({ card, users, onClose, onUpdated }) {
       <h2 style={{ marginTop: 0 }}>Upravit kartu</h2>
       <form className="create-form" onSubmit={handleSave}>
         <label>
-          Zam&#283;stnanec
+          UID karty
+          <input value={card.card_uid} disabled style={{ opacity: 0.6 }} />
+        </label>
+        <label>
+          Zaměstnanec
           <select value={userId} onChange={e => setUserId(e.target.value)}>
-            <option value="">&#8212; bez zam&#283;stnance &#8212;</option>
+            <option value="">— bez zaměstnance —</option>
             {users.map(u => (
               <option key={u.id} value={u.id}>{u.name} {u.surname}</option>
             ))}
@@ -54,13 +102,13 @@ function EditCardForm({ card, users, onClose, onUpdated }) {
         </label>
         <label className="checkbox-label">
           <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} />
-          Aktivn&#237;
+          Aktivní
         </label>
         {error && <p style={{ color: 'red', margin: 0 }}>{error}</p>}
         <div className="edit-form-actions">
-          <button type="submit" className="btn-save" disabled={loading}>Ulo&#382;it</button>
+          <button type="submit" className="btn-save" disabled={loading}>Uložit</button>
           <button type="button" className="btn-delete" onClick={handleDelete} disabled={loading}>Smazat</button>
-          <button type="button" className="btn-cancel" onClick={onClose}>Zru&#353;it</button>
+          <button type="button" className="btn-cancel" onClick={onClose}>Zrušit</button>
         </div>
       </form>
     </Modal>
@@ -75,6 +123,7 @@ function Cards() {
   const [error, setError] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [selectedId, setSelectedId] = useState(null)
+  const [showAdd, setShowAdd] = useState(false)
 
   useEffect(() => {
     Promise.all([getAllCards(), getUsers()])
@@ -105,12 +154,12 @@ function Cards() {
   return (
     <section className="page-content">
 
-      <h2>Vyhled&#225;v&#225;n&#237;</h2>
+      <h2>Vyhledávání</h2>
       <div className="filter-card">
         <label>
-          Karta nebo zam&#283;stnanec
+          Karta nebo zaměstnanec
           <input
-            placeholder="Hledat podle UID nebo jm&#233;na..."
+            placeholder="Hledat podle UID nebo jména..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -120,17 +169,18 @@ function Cards() {
       <div className="widget-card">
         <div className="block-header">
           <h2>Seznam karet</h2>
+          <button className="btn-add" title="Přidat kartu" onClick={() => setShowAdd(true)}>+</button>
         </div>
         {filtered.length === 0 ? (
-          <p>&#381;&#225;dn&#233; karty nenalezeny.</p>
+          <p className="evidence-empty">Žádné karty nenalezeny.</p>
         ) : (
           <div className="table-scroll">
             <table>
               <thead>
                 <tr>
                   <th>UID karty</th>
-                  <th>Zam&#283;stnanec</th>
-                  <th>Aktivn&#237;</th>
+                  <th>Zaměstnanec</th>
+                  <th>Aktivní</th>
                 </tr>
               </thead>
               <tbody>
@@ -161,6 +211,13 @@ function Cards() {
           users={users}
           onClose={() => setSelectedId(null)}
           onUpdated={() => { setSelectedId(null); setRefreshKey(k => k + 1) }}
+        />
+      )}
+
+      {showAdd && (
+        <AddCardModal
+          onClose={() => setShowAdd(false)}
+          onAdded={() => setRefreshKey(k => k + 1)}
         />
       )}
 

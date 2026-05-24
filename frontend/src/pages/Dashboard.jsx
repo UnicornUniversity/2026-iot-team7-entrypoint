@@ -83,7 +83,15 @@ function Dashboard() {
                     style={{ cursor: 'pointer' }}
                     onClick={() => navigate(`/employees?search=${encodeURIComponent(r.fullName)}`)}>
                     <td>{r.fullName}</td>
-                    <td>{new Date(r.timestamp).toLocaleString('cs-CZ')}</td>
+                    <td>
+                      {(() => {
+                        const d = new Date(r.timestamp)
+                        const isToday = d.toDateString() === new Date().toDateString()
+                        return isToday
+                          ? d.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
+                          : d.toLocaleString('cs-CZ', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      })()}
+                    </td>
                   </tr>
                 ))}
               </tbody>
